@@ -25,62 +25,26 @@ const iconMapping = {
   'icon3': { grey: Icon3Grey, red: Icon3Red, blue: Icon3Blue, green: Icon3Green, yellow: Icon3Yellow },
 };
 
-const IconComponent = ({
-  hoverText,
-  latestValue,
-  position,
-  onPositionChange,
-  iconKey,
-  topic = '',
-  thresholds = [0, 15, 50, 75, 100],
-  handleIconSelect
-}) => {
+const IconComponent = ({ hoverText, latestValue, position, onPositionChange, iconKey, topic = '', thresholds = [0, 15, 50, 75, 100], handleIconSelect }) => {
   const [icon, setIcon] = useState(iconMapping[iconKey]?.grey);
   const [isEditing, setIsEditing] = useState(false);
   const [currentTopic, setCurrentTopic] = useState(topic);
+  const [message, setMessage] = useState('No Data');
   const previousTopic = useRef(topic);
   const isSubscribed = useRef(false);
 
   useEffect(() => {
     if (iconMapping[iconKey]) {
       setIcon(iconMapping[iconKey].grey);
-    } else {
-      console.error(`Icon mapping for iconKey "${iconKey}" not found.`);
-      setIcon(iconMapping['icon1'].grey);
     }
   }, [iconKey]);
 
   useEffect(() => {
-    const handleMessage = (receivedTopic, message) => {
-      if (receivedTopic === currentTopic) {
-        const value = parseFloat(message);
-        if (!isNaN(value)) {
-          updateIconColor(value);
-        } else {
-          console.error(`Invalid message value: ${message}`);
-        }
+    if (latestValue !== undefined) {
+      const numericValue = typeof latestValue === 'number' ? latestValue : parseFloat(latestValue);
+      if (!isNaN(numericValue)) {
+        updateIconColor(numericValue);
       }
-    };
-
-    if (currentTopic) {
-      mqttSub(currentTopic, handleMessage);
-      return () => {
-        mqttUnsub(currentTopic);
-      };
-    }
-  }, [currentTopic]);
-
-  useEffect(() => {
-    if (latestValue === undefined) {
-      //console.warn('latestValue is undefined');
-      return;
-    }
-
-    const numericValue = typeof latestValue === 'number' ? latestValue : parseFloat(latestValue);
-    if (!isNaN(numericValue)) {
-      updateIconColor(numericValue);
-    } else {
-      console.error('Invalid latestValue:', latestValue);
     }
   }, [latestValue]);
 
@@ -127,23 +91,22 @@ const IconComponent = ({
 
   const handleSubmit = () => {
     if (currentTopic.trim()) {
-      mqttUnsub(previousTopic.current); // Unsubscribe from the previous topic
-      console.log(`Attempting to unsubscribe from: ${previousTopic.current}`);
-
+      mqttUnsub(previousTopic.current); 
+      
       previousTopic.current = currentTopic;
       mqttSub(currentTopic, (receivedTopic, message) => {
         if (receivedTopic === currentTopic) {
           const value = parseFloat(message);
+          setMessage(message);
           if (!isNaN(value)) {
             updateIconColor(value);
           } else {
             console.error(`Invalid message value: ${message}`);
           }
         }
-      }); // Subscribe to the new topic
-
+      });
+      
       isSubscribed.current = true;
-      console.log(`Subscribed to new topic: ${currentTopic}`);
       setIsEditing(false);
     }
   };
@@ -153,22 +116,17 @@ const IconComponent = ({
     setIsEditing(false);
   };
 
+  const handleDragStart = (event) => {
+    event.dataTransfer.setData('application/json', JSON.stringify({ iconKey, position }));
+  };
+
   return (
     <div
-      style={{
-        position: 'relative',
-        left: position.x,
-        top: position.y,
-        cursor: 'move',
-        zIndex: 1,
-        display: 'block',
-        width: 'min-content',
-        height: 'min-content'
-      }}
+      style={{ position: 'absolute', left: position.x, top: position.y, cursor: 'move', zIndex: 1 }}
       onClick={handleIconSelect}
       id={iconKey}
       draggable
-      onDrag={onPositionChange}
+      onDragStart={handleDragStart}
       onDoubleClick={() => setIsEditing(true)}
     >
       <img
@@ -177,7 +135,7 @@ const IconComponent = ({
         style={{ width: '50px', height: '50px', cursor: 'pointer' }}
         title={hoverText}
       />
-      <p style={{ margin: '5px 0' }}>{latestValue !== null ? latestValue : 'No Data'}</p>
+      <p style={{ margin: '5px 0' }}>{message}</p>
 
       {isEditing && (
         <div style={{ marginTop: '10px', textAlign: 'center' }}>
@@ -189,16 +147,10 @@ const IconComponent = ({
             style={{ padding: '5px', marginBottom: '5px', width: '150px', border: '1px solid #ccc', borderRadius: '4px' }}
             autoFocus
           />
-          <button
-            onClick={handleSubmit}
-            style={{ margin: '5px', padding: '5px 10px', border: 'none', backgroundColor: '#007bff', color: 'white', borderRadius: '4px', cursor: 'pointer' }}
-          >
+          <button onClick={handleSubmit} style={{ margin: '5px', padding: '5px 10px', border: 'none', backgroundColor: '#007bff', color: 'white', borderRadius: '4px', cursor: 'pointer' }}>
             Submit
           </button>
-          <button
-            onClick={handleCancel}
-            style={{ margin: '5px', padding: '5px 10px', border: 'none', backgroundColor: '#6c757d', color: 'white', borderRadius: '4px', cursor: 'pointer' }}
-          >
+          <button onClick={handleCancel} style={{ margin: '5px', padding: '5px 10px', border: 'none', backgroundColor: '#6c757d', color: 'white', borderRadius: '4px', cursor: 'pointer' }}>
             Cancel
           </button>
         </div>

@@ -80,42 +80,22 @@ function App() {
       const x = event.clientX - rect.left;
       const y = event.clientY - rect.top;
 
-      setPendingIcon({ ...icon, iconKey, position: { x, y }, id: Date.now() });
+      setPendingIcon({ ...icon, iconKey, position: { x, y }, topic: '', id: Date.now() });
       setDialogOpen(true);
-    }
-  };
-
-  const handleIconPositionChange = (id, newPosition) => {
-    const dropBox = document.querySelector('.dropbox');
-    if (dropBox) {
-      const rect = dropBox.getBoundingClientRect();
-      const iconWidth = 50; // Adjust if necessary
-      const iconHeight = 50; // Adjust if necessary
-
-      const maxX = rect.width - iconWidth;
-      const maxY = rect.height - iconHeight;
-
-      const x = Math.max(0, Math.min(newPosition.x, maxX));
-      const y = Math.max(0, Math.min(newPosition.y, maxY));
-
-      setDroppedIcons((prev) =>
-        prev.map((icon) =>
-          icon.id === id ? { ...icon, position: { x, y } } : icon
-        )
-      );
     }
   };
 
   const handleTopicSubmit = (topic, colorThresholds) => {
     if (pendingIcon && topic.trim()) {
-      if (!droppedIcons.some(icon => icon.iconKey === pendingIcon.iconKey && icon.topic === topic.trim())) {
+      const trimmedTopic = topic.trim();
+      if (!droppedIcons.some(icon => icon.iconKey === pendingIcon.iconKey && icon.topic === trimmedTopic)) {
         setDroppedIcons((prev) => [
           ...prev,
-          { ...pendingIcon, topic: topic.trim(), colorThresholds }
+          { ...pendingIcon, topic: trimmedTopic, colorThresholds }
         ]);
 
-        if (!subscribedTopics.includes(topic.trim())) {
-          mqttSub(topic.trim(), (receivedTopic, message) => {
+        if (!subscribedTopics.includes(trimmedTopic)) {
+          mqttSub(trimmedTopic, (receivedTopic, message) => {
             const value = parseFloat(message);
             setDroppedIcons((prev) =>
               prev.map((droppedIcon) =>
@@ -123,7 +103,7 @@ function App() {
               )
             );
           });
-          setSubscribedTopics((prevTopics) => [...prevTopics, topic.trim()]);
+          setSubscribedTopics((prevTopics) => [...prevTopics, trimmedTopic]);
         }
 
         setPendingIcon(null);
@@ -147,6 +127,17 @@ function App() {
 
       if (oldTopic !== newTopic) {
         mqttUnsub(oldTopic);
+        setDroppedIcons((prev) =>
+          prev.map((icon) =>
+            icon.id === editingIcon.id ? { ...icon, topic: newTopic } : icon
+          )
+        );
+
+        setSubscribedTopics((prevTopics) => {
+          const updatedTopics = prevTopics.filter((topic) => topic !== oldTopic);
+          return [...updatedTopics, newTopic];
+        });
+
         mqttSub(newTopic, (receivedTopic, message) => {
           const value = parseFloat(message);
           setDroppedIcons((prev) =>
@@ -155,21 +146,10 @@ function App() {
             )
           );
         });
+
+        setEditDialogOpen(false);
+        setEditingIcon(null);
       }
-
-      setDroppedIcons((prev) =>
-        prev.map((icon) =>
-          icon.id === editingIcon.id ? { ...icon, topic: newTopic } : icon
-        )
-      );
-
-      setSubscribedTopics((prevTopics) => {
-        const updatedTopics = prevTopics.filter((topic) => topic !== oldTopic);
-        return newTopic !== oldTopic ? [...updatedTopics, newTopic] : updatedTopics;
-      });
-
-      setEditDialogOpen(false);
-      setEditingIcon(null);
     }
   };
 
@@ -228,9 +208,6 @@ function App() {
             latestValue={icon.latestValue}
             position={icon.position}
             iconKey={icon.iconKey}
-            onPositionChange={(event) => 
-              handleIconPositionChange(icon.id, { x: event.clientX - event.currentTarget.getBoundingClientRect().left, y: event.clientY - event.currentTarget.getBoundingClientRect().top })
-            }
             onDoubleClick={() => handleIconDoubleClick(icon)}
             colorThresholds={icon.colorThresholds}
           />
@@ -239,10 +216,10 @@ function App() {
 
       <div>
         <h3>Subscribed Topics</h3>
-        {subscribedTopics.map((newTopic, index) => (
+        {subscribedTopics.map((topic, index) => (
           <div key={index} className="topic-item">
-            <span>{newTopic}</span> 
-            <button className="unsubscribeButton" onClick={() => handleUnsubscribe(newTopic)}>
+            <span>{topic}</span>
+            <button className="unsubscribeButton" onClick={() => handleUnsubscribe(topic)}>
               Unsubscribe
             </button>
           </div>
@@ -253,9 +230,10 @@ function App() {
         open={dialogOpen} 
         onClose={() => setDialogOpen(false)} 
         onSubmit={(topic, colorThresholds) => handleTopicSubmit(topic, colorThresholds)} 
-        initialTopic={newTopic}
+        initialTopic={newTopic} 
         inputRef={inputRef} 
       />
+        
       <TopicDialog 
         open={editDialogOpen} 
         onClose={handleEditCancel} 

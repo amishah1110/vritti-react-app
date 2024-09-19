@@ -42,20 +42,16 @@ const TopicDialog = ({ open, onClose, onSubmit, initialTopic = '', inputRef }) =
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (!validateInput() || isSubmitting) return; // Prevent submission if already submitting
+    if (!validateInput() || isSubmitting) return; 
 
-    setIsSubmitting(true); // Set submitting state to true
+    setIsSubmitting(true); 
 
     onSubmit(topic.trim(), thresholds);
-
-    // Note: Unsubscribe from old topic if needed
-    mqttUnsub(initialTopic);
-
     mqttSub(topic.trim(), (receivedTopic, message) => {
       console.log(`Received message on topic ${receivedTopic}: ${message}`);
     });
 
-    setIsSubmitting(false); // Reset submitting state
+    setIsSubmitting(false);
     onClose();
   };
 
@@ -70,28 +66,11 @@ const TopicDialog = ({ open, onClose, onSubmit, initialTopic = '', inputRef }) =
       <div className="dialog-content">
         <h2>Configure Topic</h2>
         <form onSubmit={handleSubmit}>
-          <input
-            id="topic"
-            type="text"
-            value={topic}
-            onChange={(e) => setTopic(e.target.value)}
-            placeholder="Enter topic name"
-            autoFocus
-            ref={inputRef}
-            className="input-field"
-          />
+          <input id="topic" type="text" value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="Enter topic name" autoFocus ref={inputRef} className="input-field"/>
           {thresholds.map((threshold, index) => (
             <div key={index} className="threshold-input">
               <label>{`Threshold ${index + 1}:`}</label>
-              <input
-                id={`threshold_${index}`}
-                type="number"
-                value={threshold}
-                onChange={(e) => handleThresholdChange(index, e.target.value)}
-                min="0"
-                step="0.1"
-                className="threshold-field"
-              />
+              <input id={`threshold_${index}`} type="number" value={threshold} onChange={(e) => handleThresholdChange(index, e.target.value)} min="0" step="0.1" className="threshold-field" />
             </div>
           ))}
           {error && <div className="error-message">{error}</div>}

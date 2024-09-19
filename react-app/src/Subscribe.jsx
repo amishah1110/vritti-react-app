@@ -2,8 +2,9 @@ import mqtt from 'mqtt';
 import { MQTT_BROKER_URL } from './mqtt-config.js';
 
 let client = null;
+let isConnected = false;
+const subscriptions = new Set();
 const callbacks = new Map();
-const subscribedTopics = new Set();
 
 // Initialize MQTT client
 export const initializeClient = () => {
@@ -12,6 +13,17 @@ export const initializeClient = () => {
 
         client.on('connect', () => {
             console.log('Connected to MQTT Broker');
+            isConnected = true;
+            // Subscribe to topics in subscriptions set
+            subscriptions.forEach(topic => {
+                client.subscribe(topic, (err) => {
+                    if (err) {
+                        console.error(`Subscription error for ${topic}: ${err}`);
+                    } else {
+                        console.log(`Subscribed to topic: ${topic}`);
+                    }
+                });
+            });
         });
 
         client.on('error', (error) => {
@@ -27,8 +39,14 @@ export const initializeClient = () => {
 
         client.on('close', () => {
             console.log('MQTT connection closed');
-            subscribedTopics.clear();
+            isConnected = false;
+            // Clear subscriptions and callbacks on connection close
+            subscriptions.clear();
             callbacks.clear();
+        });
+
+        client.on('reconnect', () => {
+            console.log('MQTT client reconnecting');
         });
     }
 
@@ -40,17 +58,22 @@ export const mqttSub = (topic, callback) => {
     const client = initializeClient();
 
     if (client) {
-        if (!subscribedTopics.has(topic)) {
-            client.subscribe(topic, (err) => {
-                if (err) {
-                    console.error(`Subscription error: ${err}`);
-                } else {
-                    console.log(`Subscribed to topic: ${topic}`);
-                    subscribedTopics.add(topic);
-                }
-            });
+        if (!subscriptions.has(topic)) {
+            subscriptions.add(topic);
+            callbacks.set(topic, callback);
+
+            if (isConnected) {
+                client.subscribe(topic, (err) => {
+                    if (err) {
+                        console.error(`Subscription error for ${topic}: ${err}`);
+                    } else {
+                        console.log(`Subscribed to topic: ${topic}`);
+                    }
+                });
+            } else {
+                console.log(`Client not connected, subscription will be handled on reconnect for topic: ${topic}`);
+            }
         }
-        callbacks.set(topic, callback);
     } else {
         console.error('MQTT client not initialized');
     }
@@ -61,17 +84,22 @@ export const mqttUnsub = (topic) => {
     const client = initializeClient();
 
     if (client) {
-        if (subscribedTopics.has(topic)) {
-            client.unsubscribe(topic, (error) => {
-                if (error) {
-                    console.error(`Error unsubscribing from ${topic}:`, error);
-                } else {
-                    console.log(`Unsubscribed from topic: ${topic}`);
-                    subscribedTopics.delete(topic);
-                    callbacks.delete(topic);
-                }
-            });
-        }
+        if (subscriptions.has(topic)) {
+            subscriptions.delete(topic);
+            callbacks.delete(topic);
+
+            if (isConnected) {
+                client.unsubscribe(topic, (error) => {
+                    if (error) {
+                        console.error(`Error unsubscribing from ${topic}:`, error);
+                    } else {
+                        console.log(`Unsubscribed from topic: ${topic}`);
+                    }
+                });
+            } else {
+                console.log(`Client not connected, unsubscription on reconnect for topic: ${topic}`);
+            }
+        } 
     } else {
         console.error('MQTT client not initialized');
     }
