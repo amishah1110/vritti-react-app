@@ -61,7 +61,7 @@ function App() {
         prevTopics.filter((t) => t !== topicToUnsubscribe)
       );
       setDroppedIcons((prev) =>
-        prev.filter((icon) => icon.topic !== topicToUnsubscribe)
+        prev.filter((icon) => icon.topic !== topicToUnsubscribe) // Remove icon from dropbox
       );
     }
   };
@@ -210,19 +210,8 @@ function App() {
             iconKey={icon.iconKey}
             onDoubleClick={() => handleIconDoubleClick(icon)}
             colorThresholds={icon.colorThresholds}
+            handleUnsubscribe={handleUnsubscribe} // Pass unsubscribe handler
           />
-        ))}
-      </div>
-
-      <div>
-        <h3>Subscribed Topics</h3>
-        {subscribedTopics.map((topic, index) => (
-          <div key={index} className="topic-item">
-            <span>{topic}</span>
-            <button className="unsubscribeButton" onClick={() => handleUnsubscribe(topic)}>
-              Unsubscribe
-            </button>
-          </div>
         ))}
       </div>
 

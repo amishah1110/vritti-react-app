@@ -95,9 +95,11 @@ const IconComponent = ({ hoverText, latestValue, position, onPositionChange, ico
       
       previousTopic.current = currentTopic;
       mqttSub(currentTopic, (receivedTopic, message) => {
+        console.log("Received message:", message, "on topic:", receivedTopic);
         if (receivedTopic === currentTopic) {
           const value = parseFloat(message);
           setMessage(message);
+          updateIconColor(value);
           if (!isNaN(value)) {
             updateIconColor(value);
           } else {
@@ -113,6 +115,15 @@ const IconComponent = ({ hoverText, latestValue, position, onPositionChange, ico
 
   const handleCancel = () => {
     setCurrentTopic(previousTopic.current);
+    setIsEditing(false);
+  };
+
+  const handleUnsubscribe = () => {
+    mqttUnsub(previousTopic.current); 
+    setMessage('No Data');
+    previousTopic.current = '';
+    setCurrentTopic('');
+    isSubscribed.current = false;
     setIsEditing(false);
   };
 
@@ -152,6 +163,9 @@ const IconComponent = ({ hoverText, latestValue, position, onPositionChange, ico
           </button>
           <button onClick={handleCancel} style={{ margin: '5px', padding: '5px 10px', border: 'none', backgroundColor: '#6c757d', color: 'white', borderRadius: '4px', cursor: 'pointer' }}>
             Cancel
+          </button>
+          <button onClick={handleUnsubscribe} style={{ margin: '5px', padding: '5px 10px', border: 'none', backgroundColor: '#dc3545', color: 'white', borderRadius: '4px', cursor: 'pointer' }}>
+            Unsubscribe
           </button>
         </div>
       )}
