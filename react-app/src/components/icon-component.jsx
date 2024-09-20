@@ -127,6 +127,15 @@ const IconComponent = ({ hoverText, latestValue, position, onPositionChange, ico
     setIsEditing(false);
   };
 
+  const handleUnsubscribeClick = () => {
+    handleUnsubscribe();
+    setMessage('No Data');
+    previousTopic.current = '';
+    setCurrentTopic('');
+    isSubscribed.current = false;
+    setIsEditing(false);
+  };
+
   const handleDragStart = (event) => {
     event.dataTransfer.setData('application/json', JSON.stringify({ iconKey, position }));
   };
@@ -164,7 +173,7 @@ const IconComponent = ({ hoverText, latestValue, position, onPositionChange, ico
           <button onClick={handleCancel} style={{ margin: '5px', padding: '5px 10px', border: 'none', backgroundColor: '#6c757d', color: 'white', borderRadius: '4px', cursor: 'pointer' }}>
             Cancel
           </button>
-          <button onClick={handleUnsubscribe} style={{ margin: '5px', padding: '5px 10px', border: 'none', backgroundColor: '#dc3545', color: 'white', borderRadius: '4px', cursor: 'pointer' }}>
+          <button onClick={handleUnsubscribeClick} style={{ margin: '5px', padding: '5px 10px', border: 'none', backgroundColor: '#dc3545', color: 'white', borderRadius: '4px', cursor: 'pointer' }}>
             Unsubscribe
           </button>
         </div>

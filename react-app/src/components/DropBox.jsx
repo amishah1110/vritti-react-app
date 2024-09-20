@@ -1,7 +1,7 @@
 import React from 'react';
 import IconComponent from './IconComponent';
 
-const DropBox = ({ icons, onIconDrop, onIconDragStart, colorThresholds }) => {
+const DropBox = ({ icons, onIconDrop, onIconDragStart, colorThresholds, handleUnsubscribe }) => {
   const handleDragOver = (event) => {
     event.preventDefault();
   };
@@ -36,6 +36,7 @@ const DropBox = ({ icons, onIconDrop, onIconDragStart, colorThresholds }) => {
           position={icon.position}
           iconKey={icon.iconKey}
           onPositionChange={() => {}}
+          handleUnsubscribe={() => handleUnsubscribe(icon.topic)} // Pass the unsubscribe handler
         />
       ))}
     </div>
