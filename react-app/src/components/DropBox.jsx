@@ -1,7 +1,26 @@
-import React from 'react';
+import React, { useState } from 'react';
 import IconComponent from './IconComponent';
 
-const DropBox = ({ icons, onIconDrop, onIconDragStart, colorThresholds, handleUnsubscribe }) => {
+const DropBox = () => {
+  const [icons, setIcons] = useState([]);
+
+  const handleIconDrop = (draggedIcon, position) => {
+    const newIcon = { ...draggedIcon, position };
+    setIcons((prevIcons) => [...prevIcons, newIcon]);
+  };
+
+  const handleUnsubscribe = (iconKey) => {
+    setIcons((prevIcons) => prevIcons.filter(icon => icon.iconKey !== iconKey));
+  };
+
+  const handleIconPositionChange = (iconKey, newPosition) => {
+    setIcons((prevIcons) =>
+      prevIcons.map(icon =>
+        icon.iconKey === iconKey ? { ...icon, position: newPosition } : icon
+      )
+    );
+  };
+
   const handleDragOver = (event) => {
     event.preventDefault();
   };
@@ -18,7 +37,7 @@ const DropBox = ({ icons, onIconDrop, onIconDragStart, colorThresholds, handleUn
     const y = dropY - rect.top;
 
     const draggedIcon = JSON.parse(event.dataTransfer.getData('application/json'));
-    onIconDrop(draggedIcon, { x, y });
+    handleIconDrop(draggedIcon, { x, y });
   };
 
   return (
@@ -26,17 +45,18 @@ const DropBox = ({ icons, onIconDrop, onIconDragStart, colorThresholds, handleUn
       className="dropbox"
       onDragOver={handleDragOver}
       onDrop={handleDrop}
+      style={{ position: 'relative', width: '100%', height: '500px', border: '1px solid #ccc' }}
     >
       {icons.map(icon => (
         <IconComponent
-          key={icon.id}
+          key={icon.iconKey}
           topic={icon.topic}
           hoverText={`Topic: ${icon.topic}`}
           latestValue={icon.latestValue}
           position={icon.position}
           iconKey={icon.iconKey}
-          onPositionChange={() => {}}
-          handleUnsubscribe={() => handleUnsubscribe(icon.topic)} // Pass the unsubscribe handler
+          handleUnsubscribe={handleUnsubscribe}
+          onPositionChange={(newPosition) => handleIconPositionChange(icon.iconKey, newPosition)}
         />
       ))}
     </div>

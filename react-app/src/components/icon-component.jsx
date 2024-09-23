@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { mqttSub, mqttUnsub } from '../Subscribe';
 
+// Import icons
 import Icon1Grey from '../icons/icon-grey.svg';
 import Icon1Red from '../icons/icon-red.svg';
 import Icon1Blue from '../icons/icon-blue.svg';
@@ -25,7 +26,7 @@ const iconMapping = {
   'icon3': { grey: Icon3Grey, red: Icon3Red, blue: Icon3Blue, green: Icon3Green, yellow: Icon3Yellow },
 };
 
-const IconComponent = ({ hoverText, latestValue, position, onPositionChange, iconKey, topic = '', thresholds = [0, 15, 50, 75, 100], handleIconSelect }) => {
+const IconComponent = ({ hoverText, latestValue, position,  onPositionChange={handlePositionChange} , iconKey, topic = '', thresholds = [0, 15, 50, 75, 100], handleIconSelect, handleUnsubscribe }) => {
   const [icon, setIcon] = useState(iconMapping[iconKey]?.grey);
   const [isEditing, setIsEditing] = useState(false);
   const [currentTopic, setCurrentTopic] = useState(topic);
@@ -85,6 +86,7 @@ const IconComponent = ({ hoverText, latestValue, position, onPositionChange, ico
     setIcon(newIcon);
   };
 
+
   const handleTopicChangeInput = (e) => {
     setCurrentTopic(e.target.value);
   };
@@ -92,7 +94,7 @@ const IconComponent = ({ hoverText, latestValue, position, onPositionChange, ico
   const handleSubmit = () => {
     if (currentTopic.trim()) {
       mqttUnsub(previousTopic.current); 
-      
+
       previousTopic.current = currentTopic;
       mqttSub(currentTopic, (receivedTopic, message) => {
         console.log("Received message:", message, "on topic:", receivedTopic);
@@ -100,14 +102,9 @@ const IconComponent = ({ hoverText, latestValue, position, onPositionChange, ico
           const value = parseFloat(message);
           setMessage(message);
           updateIconColor(value);
-          if (!isNaN(value)) {
-            updateIconColor(value);
-          } else {
-            console.error(`Invalid message value: ${message}`);
-          }
         }
       });
-      
+
       isSubscribed.current = true;
       setIsEditing(false);
     }
@@ -118,17 +115,9 @@ const IconComponent = ({ hoverText, latestValue, position, onPositionChange, ico
     setIsEditing(false);
   };
 
-  const handleUnsubscribe = () => {
-    mqttUnsub(previousTopic.current); 
-    setMessage('No Data');
-    previousTopic.current = '';
-    setCurrentTopic('');
-    isSubscribed.current = false;
-    setIsEditing(false);
-  };
-
   const handleUnsubscribeClick = () => {
-    handleUnsubscribe();
+    mqttUnsub(previousTopic.current); 
+    handleUnsubscribe(iconKey); // Call the parent's unsubscribe handler
     setMessage('No Data');
     previousTopic.current = '';
     setCurrentTopic('');
@@ -140,6 +129,12 @@ const IconComponent = ({ hoverText, latestValue, position, onPositionChange, ico
     event.dataTransfer.setData('application/json', JSON.stringify({ iconKey, position }));
   };
 
+  const handleDragEnd = (event) => {
+    const dropX = event.clientX;
+    const dropY = event.clientY;
+    onPositionChange({ x: dropX, y: dropY });
+  }
+
   return (
     <div
       style={{ position: 'absolute', left: position.x, top: position.y, cursor: 'move', zIndex: 1 }}
@@ -147,6 +142,7 @@ const IconComponent = ({ hoverText, latestValue, position, onPositionChange, ico
       id={iconKey}
       draggable
       onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
       onDoubleClick={() => setIsEditing(true)}
     >
       <img

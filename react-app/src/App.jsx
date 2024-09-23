@@ -61,7 +61,7 @@ function App() {
         prevTopics.filter((t) => t !== topicToUnsubscribe)
       );
       setDroppedIcons((prev) =>
-        prev.filter((icon) => icon.topic !== topicToUnsubscribe) // Remove icon from dropbox
+        prev.filter((icon) => icon.topic !== topicToUnsubscribe) 
       );
     }
   };
@@ -200,18 +200,17 @@ function App() {
         onDragOver={(event) => event.preventDefault()}
       >
         {droppedIcons.map((icon, index) => (
-          <IconComponent
-            key={icon.id}
-            handleIconSelect={() => handleIconSelection(index)}
-            topic={icon.topic}
-            hoverText={`Topic: ${icon.topic}`}
-            latestValue={icon.latestValue}
-            position={icon.position}
-            iconKey={icon.iconKey}
-            onDoubleClick={() => handleIconDoubleClick(icon)}
-            colorThresholds={icon.colorThresholds}
-            handleUnsubscribe={handleUnsubscribe} // Pass unsubscribe handler
-          />
+         <IconComponent  
+            key={icon.iconKey}  
+            topic={icon.topic}  
+            hoverText={`Topic: ${icon.topic}`}  
+            latestValue={icon.latestValue}  
+            position={icon.position}  
+            iconKey={icon.iconKey}  
+            onDragStart={(event) => handleDragStart(event, icon, icon.iconKey)}  
+            handleUnsubscribe={handleUnsubscribe}  
+       />
+       
         ))}
       </div>
 
