@@ -26,7 +26,7 @@ const iconMapping = {
   'icon3': { grey: Icon3Grey, red: Icon3Red, blue: Icon3Blue, green: Icon3Green, yellow: Icon3Yellow },
 };
 
-const IconComponent = ({ hoverText, latestValue, position,  onPositionChange={handlePositionChange} , iconKey, topic = '', thresholds = [0, 15, 50, 75, 100], handleIconSelect, handleUnsubscribe }) => {
+const IconComponent = ({ hoverText, latestValue, position, onPositionChange, iconKey, topic = '', thresholds = [0, 15, 50, 75, 100], handleIconSelect, handleUnsubscribe }) => {
   const [icon, setIcon] = useState(iconMapping[iconKey]?.grey);
   const [isEditing, setIsEditing] = useState(false);
   const [currentTopic, setCurrentTopic] = useState(topic);
@@ -86,14 +86,13 @@ const IconComponent = ({ hoverText, latestValue, position,  onPositionChange={ha
     setIcon(newIcon);
   };
 
-
   const handleTopicChangeInput = (e) => {
     setCurrentTopic(e.target.value);
   };
 
   const handleSubmit = () => {
     if (currentTopic.trim()) {
-      mqttUnsub(previousTopic.current); 
+      mqttUnsub(previousTopic.current);
 
       previousTopic.current = currentTopic;
       mqttSub(currentTopic, (receivedTopic, message) => {
@@ -116,7 +115,7 @@ const IconComponent = ({ hoverText, latestValue, position,  onPositionChange={ha
   };
 
   const handleUnsubscribeClick = () => {
-    mqttUnsub(previousTopic.current); 
+    mqttUnsub(previousTopic.current);
     handleUnsubscribe(iconKey); // Call the parent's unsubscribe handler
     setMessage('No Data');
     previousTopic.current = '';
@@ -125,15 +124,18 @@ const IconComponent = ({ hoverText, latestValue, position,  onPositionChange={ha
     setIsEditing(false);
   };
 
+  const handleDrag = (event) => {
+    const newPosition = { x: event.clientX - 25, y: event.clientY - 25 }; // Adjust for icon size
+    onPositionChange(iconKey, newPosition);
+  };
+
   const handleDragStart = (event) => {
-    event.dataTransfer.setData('application/json', JSON.stringify({ iconKey, position }));
+    event.dataTransfer.setData('application/json', JSON.stringify({ iconKey, topic }));
   };
 
   const handleDragEnd = (event) => {
-    const dropX = event.clientX;
-    const dropY = event.clientY;
-    onPositionChange({ x: dropX, y: dropY });
-  }
+    event.preventDefault();
+  };
 
   return (
     <div
@@ -142,7 +144,6 @@ const IconComponent = ({ hoverText, latestValue, position,  onPositionChange={ha
       id={iconKey}
       draggable
       onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
       onDoubleClick={() => setIsEditing(true)}
     >
       <img

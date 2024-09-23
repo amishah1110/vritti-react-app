@@ -1,24 +1,30 @@
+// DropBox.jsx
 import React, { useState } from 'react';
 import IconComponent from './IconComponent';
+import TopicDialog from './TopicDialog'; // Import your TopicDialog
 
 const DropBox = () => {
   const [icons, setIcons] = useState([]);
+  const [showDialog, setShowDialog] = useState(false);
+  const [currentIconData, setCurrentIconData] = useState(null);
 
   const handleIconDrop = (draggedIcon, position) => {
-    const newIcon = { ...draggedIcon, position };
-    setIcons((prevIcons) => [...prevIcons, newIcon]);
+    if (currentIconData) {
+      const newIcon = { ...draggedIcon, position };
+      setIcons((prevIcons) => [...prevIcons, newIcon]);
+      setShowDialog(false); // Close dialog after adding icon
+    } else {
+
+      setIcons((prevIcons) =>
+        prevIcons.map(icon =>
+          icon.iconKey === draggedIcon.iconKey ? { ...icon, position } : icon
+        )
+      );
+    }
   };
 
   const handleUnsubscribe = (iconKey) => {
     setIcons((prevIcons) => prevIcons.filter(icon => icon.iconKey !== iconKey));
-  };
-
-  const handleIconPositionChange = (iconKey, newPosition) => {
-    setIcons((prevIcons) =>
-      prevIcons.map(icon =>
-        icon.iconKey === iconKey ? { ...icon, position: newPosition } : icon
-      )
-    );
   };
 
   const handleDragOver = (event) => {
@@ -36,8 +42,21 @@ const DropBox = () => {
     const x = dropX - rect.left;
     const y = dropY - rect.top;
 
-    const draggedIcon = JSON.parse(event.dataTransfer.getData('application/json'));
-    handleIconDrop(draggedIcon, { x, y });
+    const draggedData = JSON.parse(event.dataTransfer.getData('application/json'));
+
+    if (currentIconData) {
+      handleIconDrop(draggedData, { x, y });
+    } else {
+      handleIconDrop(draggedData, { x, y });
+    }
+  };
+
+  const handleExternalDrag = (e) => {
+    setCurrentIconData(true);
+  };
+
+  const handleInternalDrag = () => {
+    setCurrentIconData(false);
   };
 
   return (
@@ -51,14 +70,21 @@ const DropBox = () => {
         <IconComponent
           key={icon.iconKey}
           topic={icon.topic}
-          hoverText={`Topic: ${icon.topic}`}
-          latestValue={icon.latestValue}
           position={icon.position}
           iconKey={icon.iconKey}
           handleUnsubscribe={handleUnsubscribe}
-          onPositionChange={(newPosition) => handleIconPositionChange(icon.iconKey, newPosition)}
+          onPositionChange={handleIconDrop}
+          onDragStart={handleInternalDrag} 
         />
       ))}
+      {showDialog && (
+        <TopicDialog
+          open={showDialog}
+          onClose={() => setShowDialog(false)}
+          onSubmit={(topic, thresholds) => {
+          }}
+        />
+      )}
     </div>
   );
 };

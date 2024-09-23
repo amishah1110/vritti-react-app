@@ -29,12 +29,6 @@ function App() {
     }
   }, [dialogOpen]);
 
-  const handleIconSelection = (index) => {
-    if (index < droppedIcons.length) {
-      setSelectedIcon(droppedIcons[index]);
-    }
-  };
-
   const handleTopicChange = (event) => {
     setNewTopic(event.target.value);
   };
@@ -54,70 +48,78 @@ function App() {
     }
   };
 
-  const handleUnsubscribe = (topicToUnsubscribe) => {
-    if (topicToUnsubscribe) {
-      mqttUnsub(topicToUnsubscribe);
-      setSubscribedTopics((prevTopics) =>
-        prevTopics.filter((t) => t !== topicToUnsubscribe)
+  const handleUnsubscribe = (iconKey) => {
+    const iconToUnsubscribe = droppedIcons.find(icon => icon.iconKey === iconKey);
+    if (iconToUnsubscribe) {
+      mqttUnsub(iconToUnsubscribe.topic);
+      setDroppedIcons((prevIcons) =>
+        prevIcons.filter(icon => icon.iconKey !== iconKey) 
       );
-      setDroppedIcons((prev) =>
-        prev.filter((icon) => icon.topic !== topicToUnsubscribe) 
+      setSubscribedTopics((prevTopics) =>
+        prevTopics.filter(topic => topic !== iconToUnsubscribe.topic)
       );
     }
   };
+  
 
   const handleDragStart = (event, icon, iconKey) => {
     event.dataTransfer.setData('application/json', JSON.stringify({ icon, iconKey }));
     event.dataTransfer.effectAllowed = 'move';
   };
 
+ 
   const handleDrop = (event) => {
     event.preventDefault();
     const data = event.dataTransfer.getData('application/json');
+    
     if (data && event.target.id === 'drop-box') {
       const { icon, iconKey } = JSON.parse(data);
+      
       const rect = event.currentTarget.getBoundingClientRect();
       const x = event.clientX - rect.left;
       const y = event.clientY - rect.top;
-
-      setPendingIcon({ ...icon, iconKey, position: { x, y }, topic: '', id: Date.now() });
-      setDialogOpen(true);
+  
+      const existingIcon = droppedIcons.find(icon => icon.iconKey === iconKey);
+  
+      if (existingIcon) {
+        setDroppedIcons(prevIcons => 
+          prevIcons.map(icon => 
+            icon.iconKey === iconKey ? { ...icon, position: { x, y } } : icon
+          )
+        );
+      } else {
+        setPendingIcon({ ...icon, iconKey: `${iconKey}_${Date.now()}`, position: { x, y }, topic: '', id: Date.now() });
+        setDialogOpen(true);
+      }
     }
   };
+  
 
   const handleTopicSubmit = (topic, colorThresholds) => {
     if (pendingIcon && topic.trim()) {
       const trimmedTopic = topic.trim();
-      if (!droppedIcons.some(icon => icon.iconKey === pendingIcon.iconKey && icon.topic === trimmedTopic)) {
+      const uniqueIconKey = `${pendingIcon.iconKey}_${trimmedTopic}`;
+  
+      if (!droppedIcons.some(icon => icon.topic === trimmedTopic && icon.iconKey === pendingIcon.iconKey)) {
         setDroppedIcons((prev) => [
           ...prev,
-          { ...pendingIcon, topic: trimmedTopic, colorThresholds }
+          { ...pendingIcon, topic: trimmedTopic, iconKey: uniqueIconKey, colorThresholds }
         ]);
-
-        if (!subscribedTopics.includes(trimmedTopic)) {
-          mqttSub(trimmedTopic, (receivedTopic, message) => {
-            const value = parseFloat(message);
-            setDroppedIcons((prev) =>
-              prev.map((droppedIcon) =>
-                droppedIcon.topic === receivedTopic ? { ...droppedIcon, latestValue: value } : droppedIcon
-              )
-            );
-          });
-          setSubscribedTopics((prevTopics) => [...prevTopics, trimmedTopic]);
-        }
-
+        mqttSub(trimmedTopic, (receivedTopic, message) => {
+          const value = parseFloat(message);
+          setDroppedIcons((prev) =>
+            prev.map((droppedIcon) =>
+              droppedIcon.topic === receivedTopic ? { ...droppedIcon, latestValue: value } : droppedIcon
+            )
+          );
+        });
+  
         setPendingIcon(null);
         setDialogOpen(false);
       } else {
         alert("An icon with this topic already exists. Please enter a unique topic.");
       }
     }
-  };
-
-  const handleIconDoubleClick = (icon) => {
-    setEditingIcon(icon);
-    setEditedTopic(icon.topic || '');
-    setEditDialogOpen(true);
   };
 
   const handleEditSubmit = () => {
@@ -157,6 +159,15 @@ function App() {
     setEditDialogOpen(false);
     setEditingIcon(null);
   };
+  
+  const handlePositionChange = (iconKey, newPosition) => {
+    setDroppedIcons((prevIcons) =>
+      prevIcons.map((icon) =>
+        icon.iconKey === iconKey ? { ...icon, position: newPosition } : icon
+      )
+    );
+  };
+  
 
   return (
     <div className="App">
@@ -199,7 +210,7 @@ function App() {
         onDrop={handleDrop}
         onDragOver={(event) => event.preventDefault()}
       >
-        {droppedIcons.map((icon, index) => (
+        {droppedIcons.map((icon) => (
          <IconComponent  
             key={icon.iconKey}  
             topic={icon.topic}  
@@ -208,8 +219,9 @@ function App() {
             position={icon.position}  
             iconKey={icon.iconKey}  
             onDragStart={(event) => handleDragStart(event, icon, icon.iconKey)}  
-            handleUnsubscribe={handleUnsubscribe}  
-       />
+            handleUnsubscribe={handleUnsubscribe} 
+            onPositionChange={handlePositionChange}  
+            />
        
         ))}
       </div>

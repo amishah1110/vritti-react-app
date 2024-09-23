@@ -12,7 +12,7 @@ const TopicDialog = ({ open, onClose, onSubmit, initialTopic = '', inputRef }) =
       setTopic(initialTopic);
       setThresholds([0, 25, 50, 75, 100]);
       setError('');
-      setIsSubmitting(false); // Reset submitting state
+      setIsSubmitting(false); 
     }
   }, [open, initialTopic]);
 
@@ -70,7 +70,7 @@ const TopicDialog = ({ open, onClose, onSubmit, initialTopic = '', inputRef }) =
           {thresholds.map((threshold, index) => (
             <div key={index} className="threshold-input">
               <label>{`Threshold ${index + 1}:`}</label>
-              <input id={`threshold_${index}`} type="number" value={threshold} onChange={(e) => handleThresholdChange(index, e.target.value)} min="0" step="0.1" className="threshold-field" />
+              <input id={`threshold_${index}`} type="number" value={threshold} onChange={(e) => handleThresholdChange(index, e.target.value)} min="0" step="0.01" className="threshold-field" />
             </div>
           ))}
           {error && <div className="error-message">{error}</div>}
