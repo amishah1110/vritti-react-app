@@ -20,7 +20,7 @@ import Icon3Blue from '../icons/planner-blue.svg';
 import Icon3Green from '../icons/planner-green.svg';
 import Icon3Yellow from '../icons/planner-yellow.svg';
 
-const iconMapping = {
+export const iconMapping = {
   'icon1': { grey: Icon1Grey, red: Icon1Red, blue: Icon1Blue, green: Icon1Green, yellow: Icon1Yellow },
   'icon2': { grey: Icon2Grey, red: Icon2Red, blue: Icon2Blue, green: Icon2Green, yellow: Icon2Yellow },
   'icon3': { grey: Icon3Grey, red: Icon3Red, blue: Icon3Blue, green: Icon3Green, yellow: Icon3Yellow },
@@ -37,6 +37,16 @@ const IconComponent = ({ hoverText, latestValue, position, onPositionChange, ico
   useEffect(() => {
     if (iconMapping[iconKey]) {
       setIcon(iconMapping[iconKey].grey);
+    }
+  }, [iconKey]);
+
+  useEffect(() => {
+    const mappedIcon = iconMapping[iconKey];
+    if (mappedIcon) {
+      setIcon(mappedIcon.grey);
+    } else {
+      console.error(`No icon mapping found for: ${iconKey}`);
+      setIcon(Icon1Grey); 
     }
   }, [iconKey]);
 
@@ -116,7 +126,7 @@ const IconComponent = ({ hoverText, latestValue, position, onPositionChange, ico
 
   const handleUnsubscribeClick = () => {
     mqttUnsub(previousTopic.current);
-    handleUnsubscribe(iconKey); // Call the parent's unsubscribe handler
+    handleUnsubscribe(iconKey); 
     setMessage('No Data');
     previousTopic.current = '';
     setCurrentTopic('');

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import IconComponent from './components/icon-component';
+import { iconMapping } from './components/icon-component';
 import TopicDialog from './components/TopicDialog';
 import { mqttSub, mqttUnsub, initializeClient } from './Subscribe';
 import icon1 from './icons/icon-grey.svg';
@@ -18,7 +19,7 @@ function App() {
   const [droppedIcons, setDroppedIcons] = useState([]);
   const [pendingIcon, setPendingIcon] = useState(null);
   const inputRef = useRef(null);
-
+  
   useEffect(() => {
     initializeClient();
   }, []);
@@ -60,67 +61,88 @@ function App() {
       );
     }
   };
-  
 
-  const handleDragStart = (event, icon, iconKey) => {
-    event.dataTransfer.setData('application/json', JSON.stringify({ icon, iconKey }));
+  const handleDragStart = (event, iconKey) => {
+    event.dataTransfer.setData('application/json', JSON.stringify({ iconKey }));
     event.dataTransfer.effectAllowed = 'move';
   };
 
- 
   const handleDrop = (event) => {
     event.preventDefault();
     const data = event.dataTransfer.getData('application/json');
-    
+
     if (data && event.target.id === 'drop-box') {
-      const { icon, iconKey } = JSON.parse(data);
-      
-      const rect = event.currentTarget.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
-  
-      const existingIcon = droppedIcons.find(icon => icon.iconKey === iconKey);
-  
-      if (existingIcon) {
-        setDroppedIcons(prevIcons => 
-          prevIcons.map(icon => 
-            icon.iconKey === iconKey ? { ...icon, position: { x, y } } : icon
-          )
-        );
-      } else {
-        setPendingIcon({ ...icon, iconKey: `${iconKey}_${Date.now()}`, position: { x, y }, topic: '', id: Date.now() });
-        setDialogOpen(true);
-      }
+        const { iconKey } = JSON.parse(data);
+
+        const rect = event.currentTarget.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+
+        // Check for overlapping icons
+        const existingIcon = droppedIcons.find(icon => {
+            const iconRect = {
+                x: icon.position.x,
+                y: icon.position.y,
+                width: 50, // Assuming 50px width
+                height: 50  // Assuming 50px height
+            };
+            return (
+                x < iconRect.x + iconRect.width &&
+                x + 50 > iconRect.x &&
+                y < iconRect.y + iconRect.height &&
+                y + 50 > iconRect.y
+            );
+        });
+
+        if (existingIcon) {
+            alert("An icon is already present in this location. Please choose another spot.");
+            return;
+        }
+
+        // Create new icon with the correct iconKey
+        const newIcon = {
+            id: Date.now(), // Generate a unique ID
+            iconKey, // Use the dropped icon's key
+            position: { x, y },
+            topic: selectedIcon?.topic || '', // Or set this directly based on user input
+            color: iconMapping[iconKey]?.grey // Ensure the color matches the icon
+        };
+
+        // Add the new icon to the dropped icons array
+        setDroppedIcons(prev => [...prev, newIcon]);
+        setPendingIcon(newIcon);
+        setDialogOpen(true); // Open the topic dialog
     }
-  };
-  
+};
 
   const handleTopicSubmit = (topic, colorThresholds) => {
     if (pendingIcon && topic.trim()) {
-      const trimmedTopic = topic.trim();
-      const uniqueIconKey = `${pendingIcon.iconKey}_${trimmedTopic}`;
-  
-      if (!droppedIcons.some(icon => icon.topic === trimmedTopic && icon.iconKey === pendingIcon.iconKey)) {
-        setDroppedIcons((prev) => [
-          ...prev,
-          { ...pendingIcon, topic: trimmedTopic, iconKey: uniqueIconKey, colorThresholds }
-        ]);
-        mqttSub(trimmedTopic, (receivedTopic, message) => {
-          const value = parseFloat(message);
-          setDroppedIcons((prev) =>
-            prev.map((droppedIcon) =>
-              droppedIcon.topic === receivedTopic ? { ...droppedIcon, latestValue: value } : droppedIcon
-            )
-          );
-        });
-  
-        setPendingIcon(null);
-        setDialogOpen(false);
-      } else {
-        alert("An icon with this topic already exists. Please enter a unique topic.");
-      }
+        const trimmedTopic = topic.trim();
+        const uniqueIconKey = `${pendingIcon.iconKey}_${trimmedTopic}`;
+
+        if (!droppedIcons.some(icon => icon.topic === trimmedTopic && icon.iconKey === pendingIcon.iconKey)) {
+            setDroppedIcons((prev) => [
+                ...prev,
+                { ...pendingIcon, topic: trimmedTopic, iconKey: uniqueIconKey, colorThresholds }
+            ]);
+
+            mqttSub(trimmedTopic, (receivedTopic, message) => {
+                const value = parseFloat(message);
+                setDroppedIcons((prev) =>
+                    prev.map((icon) =>
+                        icon.topic === receivedTopic ? { ...icon, latestValue: value } : icon
+                    )
+                );
+            });
+
+            setPendingIcon(null);
+            setDialogOpen(false);
+        } else {
+            alert("An icon with this topic already exists. Please enter a unique topic.");
+        }
     }
   };
+
 
   const handleEditSubmit = () => {
     if (editedTopic.trim() && editingIcon) {
@@ -168,7 +190,6 @@ function App() {
     );
   };
   
-
   return (
     <div className="App">
       <div className="subscription-container">
@@ -187,19 +208,19 @@ function App() {
           src={icon1}
           alt="icon-1"
           draggable
-          onDragStart={(event) => handleDragStart(event, icon1, 'icon1')}
+          onDragStart={(event) => handleDragStart(event, 'icon1')}
         />
         <img
           src={icon2}
           alt="icon-2"
           draggable
-          onDragStart={(event) => handleDragStart(event, icon2, 'icon2')}
+          onDragStart={(event) => handleDragStart(event, 'icon2')}
         />
         <img
           src={icon3}
           alt="icon-3"
           draggable
-          onDragStart={(event) => handleDragStart(event, icon3, 'icon3')}
+          onDragStart={(event) => handleDragStart(event, 'icon3')}
         />
       </div>
 
@@ -211,18 +232,17 @@ function App() {
         onDragOver={(event) => event.preventDefault()}
       >
         {droppedIcons.map((icon) => (
-         <IconComponent  
+          <IconComponent  
+            id={icon.id}
             key={icon.iconKey}  
             topic={icon.topic}  
             hoverText={`Topic: ${icon.topic}`}  
             latestValue={icon.latestValue}  
             position={icon.position}  
             iconKey={icon.iconKey}  
-            onDragStart={(event) => handleDragStart(event, icon, icon.iconKey)}  
             handleUnsubscribe={handleUnsubscribe} 
             onPositionChange={handlePositionChange}  
-            />
-       
+          />
         ))}
       </div>
 
