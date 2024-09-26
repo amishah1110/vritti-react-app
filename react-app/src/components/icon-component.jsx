@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { mqttSub, mqttUnsub } from '../Subscribe';
 
-// Import icons
 import Icon1Grey from '../icons/icon-grey.svg';
 import Icon1Red from '../icons/icon-red.svg';
 import Icon1Blue from '../icons/icon-blue.svg';
@@ -30,23 +29,16 @@ const IconComponent = ({ hoverText, latestValue, position, onPositionChange, ico
   const [icon, setIcon] = useState(iconMapping[iconKey]?.grey);
   const [isEditing, setIsEditing] = useState(false);
   const [currentTopic, setCurrentTopic] = useState(topic);
-  const [message, setMessage] = useState('No Data');
+  const [message, setMessage] = useState('');
   const previousTopic = useRef(topic);
   const isSubscribed = useRef(false);
 
   useEffect(() => {
     if (iconMapping[iconKey]) {
       setIcon(iconMapping[iconKey].grey);
-    }
-  }, [iconKey]);
-
-  useEffect(() => {
-    const mappedIcon = iconMapping[iconKey];
-    if (mappedIcon) {
-      setIcon(mappedIcon.grey);
     } else {
       console.error(`No icon mapping found for: ${iconKey}`);
-      setIcon(Icon1Grey); 
+      setIcon(iconMapping['icon1'].grey);
     }
   }, [iconKey]);
 
@@ -100,25 +92,40 @@ const IconComponent = ({ hoverText, latestValue, position, onPositionChange, ico
     setCurrentTopic(e.target.value);
   };
 
-  const handleSubmit = () => {
-    if (currentTopic.trim()) {
-      mqttUnsub(previousTopic.current);
-
-      previousTopic.current = currentTopic;
-      mqttSub(currentTopic, (receivedTopic, message) => {
-        console.log("Received message:", message, "on topic:", receivedTopic);
-        if (receivedTopic === currentTopic) {
-          const value = parseFloat(message);
-          setMessage(message);
-          updateIconColor(value);
-        }
+  const handleSubscribe = () => {
+    if (newTopic && !subscribedTopics.includes(newTopic)) {
+      mqttSub(newTopic, (receivedTopic, message) => {
+        const value = parseFloat(message);
+        console.log(`Received message on topic ${receivedTopic}: ${value}`); // Debug log
+        setDroppedIcons((prev) =>
+          prev.map((icon) =>
+            icon.topic === receivedTopic ? { ...icon, latestValue: value } : icon
+          )
+        );
       });
-
-      isSubscribed.current = true;
-      setIsEditing(false);
+  
+      // Set a default icon and drop it in the dropbox upon subscribing
+      const defaultIconKey = 'icon1'; // Choose an appropriate default icon, e.g., icon1
+      const defaultPosition = { x: 10, y: 10 }; // Default position in the dropbox (top-left corner)
+      
+      // Add the icon to the droppedIcons array
+      const newIcon = {
+        id: Date.now(), // Ensure unique ID
+        iconKey: defaultIconKey,
+        position: defaultPosition,
+        topic: newTopic, // Assign the new subscribed topic to the icon
+        color: iconMapping[defaultIconKey]?.grey // Set color to default grey or any other
+      };
+  
+      setDroppedIcons((prev) => [...prev, newIcon]);
+  
+      // Add the new topic to the subscribed topics list
+      setSubscribedTopics((prevTopics) => [...prevTopics, newTopic]);
+      
+      // Clear the input field
+      setNewTopic('');
     }
-  };
-
+  }; 
   const handleCancel = () => {
     setCurrentTopic(previousTopic.current);
     setIsEditing(false);
@@ -126,7 +133,7 @@ const IconComponent = ({ hoverText, latestValue, position, onPositionChange, ico
 
   const handleUnsubscribeClick = () => {
     mqttUnsub(previousTopic.current);
-    handleUnsubscribe(iconKey); 
+    handleUnsubscribe(iconKey);
     setMessage('No Data');
     previousTopic.current = '';
     setCurrentTopic('');
@@ -135,7 +142,7 @@ const IconComponent = ({ hoverText, latestValue, position, onPositionChange, ico
   };
 
   const handleDrag = (event) => {
-    const newPosition = { x: event.clientX - 25, y: event.clientY - 25 }; // Adjust for icon size
+    const newPosition = { x: event.clientX - 25, y: event.clientY - 25 }; 
     onPositionChange(iconKey, newPosition);
   };
 
@@ -149,7 +156,14 @@ const IconComponent = ({ hoverText, latestValue, position, onPositionChange, ico
 
   return (
     <div
-      style={{ position: 'absolute', left: position.x, top: position.y, cursor: 'move', zIndex: 1 }}
+      style={{ 
+        position: 'absolute', 
+        left: position.x, 
+        top: position.y, 
+        cursor: 'move', 
+        zIndex: 1, 
+        textAlign: 'center' // Ensures text is centered under the icon
+      }}
       onClick={handleIconSelect}
       id={iconKey}
       draggable
@@ -159,10 +173,10 @@ const IconComponent = ({ hoverText, latestValue, position, onPositionChange, ico
       <img
         src={icon}
         alt="Icon"
-        style={{ width: '50px', height: '50px', cursor: 'pointer' }}
+        style={{ width: '50px', height: '50px', cursor: 'pointer'}}
         title={hoverText}
       />
-      <p style={{ margin: '5px 0' }}>{message}</p>
+      <p style={{ fontSize: '12px', color: '#333', position: 'relative' }}> {message} </p>
 
       {isEditing && (
         <div style={{ marginTop: '10px', textAlign: 'center' }}>
@@ -174,7 +188,7 @@ const IconComponent = ({ hoverText, latestValue, position, onPositionChange, ico
             style={{ padding: '5px', marginBottom: '5px', width: '150px', border: '1px solid #ccc', borderRadius: '4px' }}
             autoFocus
           />
-          <button onClick={handleSubmit} style={{ margin: '5px', padding: '5px 10px', border: 'none', backgroundColor: '#007bff', color: 'white', borderRadius: '4px', cursor: 'pointer' }}>
+          <button onClick={handleSubs} style={{ margin: '5px', padding: '5px 10px', border: 'none', backgroundColor: '#007bff', color: 'white', borderRadius: '4px', cursor: 'pointer' }}>
             Submit
           </button>
           <button onClick={handleCancel} style={{ margin: '5px', padding: '5px 10px', border: 'none', backgroundColor: '#6c757d', color: 'white', borderRadius: '4px', cursor: 'pointer' }}>

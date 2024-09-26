@@ -19,7 +19,7 @@ function App() {
   const [droppedIcons, setDroppedIcons] = useState([]);
   const [pendingIcon, setPendingIcon] = useState(null);
   const inputRef = useRef(null);
-  
+
   useEffect(() => {
     initializeClient();
   }, []);
@@ -38,6 +38,7 @@ function App() {
     if (newTopic && !subscribedTopics.includes(newTopic)) {
       mqttSub(newTopic, (receivedTopic, message) => {
         const value = parseFloat(message);
+        console.log(`Received message on topic ${receivedTopic}: ${value}`); 
         setDroppedIcons((prev) =>
           prev.map((icon) =>
             icon.topic === receivedTopic ? { ...icon, latestValue: value } : icon
@@ -70,79 +71,71 @@ function App() {
   const handleDrop = (event) => {
     event.preventDefault();
     const data = event.dataTransfer.getData('application/json');
-
+  
     if (data && event.target.id === 'drop-box') {
-        const { iconKey } = JSON.parse(data);
-
-        const rect = event.currentTarget.getBoundingClientRect();
-        const x = event.clientX - rect.left;
-        const y = event.clientY - rect.top;
-
-        // Check for overlapping icons
-        const existingIcon = droppedIcons.find(icon => {
-            const iconRect = {
-                x: icon.position.x,
-                y: icon.position.y,
-                width: 50, // Assuming 50px width
-                height: 50  // Assuming 50px height
-            };
-            return (
-                x < iconRect.x + iconRect.width &&
-                x + 50 > iconRect.x &&
-                y < iconRect.y + iconRect.height &&
-                y + 50 > iconRect.y
-            );
-        });
+      const { iconKey } = JSON.parse(data);
+      
+      const rect = event.currentTarget.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      
+      const existingIcon = droppedIcons.find(icon => icon.iconKey === iconKey);
+  
+      if (iconKey.includes('icon1') || iconKey.includes('icon2') || iconKey.includes('icon3')) {
+        const existingIcon = droppedIcons.find(icon => icon.iconKey === iconKey);
 
         if (existingIcon) {
-            alert("An icon is already present in this location. Please choose another spot.");
-            return;
-        }
-
-        // Create new icon with the correct iconKey
-        const newIcon = {
-            id: Date.now(), // Generate a unique ID
-            iconKey, // Use the dropped icon's key
-            position: { x, y },
-            topic: selectedIcon?.topic || '', // Or set this directly based on user input
-            color: iconMapping[iconKey]?.grey // Ensure the color matches the icon
-        };
-
-        // Add the new icon to the dropped icons array
-        setDroppedIcons(prev => [...prev, newIcon]);
-        setPendingIcon(newIcon);
-        setDialogOpen(true); // Open the topic dialog
-    }
-};
-
-  const handleTopicSubmit = (topic, colorThresholds) => {
-    if (pendingIcon && topic.trim()) {
-        const trimmedTopic = topic.trim();
-        const uniqueIconKey = `${pendingIcon.iconKey}_${trimmedTopic}`;
-
-        if (!droppedIcons.some(icon => icon.topic === trimmedTopic && icon.iconKey === pendingIcon.iconKey)) {
-            setDroppedIcons((prev) => [
-                ...prev,
-                { ...pendingIcon, topic: trimmedTopic, iconKey: uniqueIconKey, colorThresholds }
-            ]);
-
-            mqttSub(trimmedTopic, (receivedTopic, message) => {
-                const value = parseFloat(message);
-                setDroppedIcons((prev) =>
-                    prev.map((icon) =>
-                        icon.topic === receivedTopic ? { ...icon, latestValue: value } : icon
-                    )
-                );
-            });
-
-            setPendingIcon(null);
-            setDialogOpen(false);
+          setDroppedIcons(prevIcons => 
+            prevIcons.map(icon => 
+              icon.iconKey === iconKey ? { ...icon, position: { x, y } } : icon
+            )
+          );
         } else {
-            alert("An icon with this topic already exists. Please enter a unique topic.");
+          const newIcon = {
+            id: Date.now(), 
+            iconKey,
+            position: { x, y },
+            topic: pendingIcon?.topic || '',
+            color: iconMapping[iconKey]?.grey 
+          };
+  
+          setDroppedIcons(prev => [...prev, newIcon]);
+          setPendingIcon(newIcon);
+          setDialogOpen(true);
         }
+      } else {
+        console.error("Invalid iconKey:", iconKey);
+      }
     }
   };
+  
+  const handleTopicSubmit = (topic, colorThresholds) => {
+    if (pendingIcon && topic.trim()) {
+      const trimmedTopic = topic.trim();
+      const uniqueIconKey = pendingIcon.iconKey; // Use original iconKey
 
+      if (!droppedIcons.some(icon => icon.topic === trimmedTopic && icon.iconKey === uniqueIconKey)) {
+        setDroppedIcons((prev) => [
+          ...prev,
+          { ...pendingIcon, topic: trimmedTopic, iconKey: uniqueIconKey, colorThresholds }
+        ]);
+
+        mqttSub(trimmedTopic, (receivedTopic, message) => {
+          const value = parseFloat(message);
+          setDroppedIcons((prev) =>
+            prev.map((icon) =>
+              icon.topic === receivedTopic ? { ...icon, latestValue: value } : icon
+            )
+          );
+        });
+
+        setPendingIcon(null);
+        setDialogOpen(false);
+      } else {
+        alert("An icon with this topic already exists. Please enter a unique topic.");
+      }
+    }
+  };
 
   const handleEditSubmit = () => {
     if (editedTopic.trim() && editingIcon) {
@@ -170,7 +163,7 @@ function App() {
             )
           );
         });
-
+        
         setEditDialogOpen(false);
         setEditingIcon(null);
       }
@@ -181,7 +174,7 @@ function App() {
     setEditDialogOpen(false);
     setEditingIcon(null);
   };
-  
+
   const handlePositionChange = (iconKey, newPosition) => {
     setDroppedIcons((prevIcons) =>
       prevIcons.map((icon) =>
@@ -189,7 +182,7 @@ function App() {
       )
     );
   };
-  
+
   return (
     <div className="App">
       <div className="subscription-container">
@@ -233,8 +226,7 @@ function App() {
       >
         {droppedIcons.map((icon) => (
           <IconComponent  
-            id={icon.id}
-            key={icon.iconKey}  
+            key={icon.id}
             topic={icon.topic}  
             hoverText={`Topic: ${icon.topic}`}  
             latestValue={icon.latestValue}  
@@ -246,20 +238,9 @@ function App() {
         ))}
       </div>
 
-      <TopicDialog 
-        open={dialogOpen} 
-        onClose={() => setDialogOpen(false)} 
-        onSubmit={(topic, colorThresholds) => handleTopicSubmit(topic, colorThresholds)} 
-        initialTopic={newTopic} 
-        inputRef={inputRef} 
-      />
+      <TopicDialog open={dialogOpen} onClose={() => setDialogOpen(false)} onSubmit={(topic, colorThresholds) => handleTopicSubmit(topic, colorThresholds)} initialTopic={newTopic} inputRef={inputRef} />
         
-      <TopicDialog 
-        open={editDialogOpen} 
-        onClose={handleEditCancel} 
-        onSubmit={handleEditSubmit} 
-        initialTopic={editedTopic} 
-      />
+      <TopicDialog open={editDialogOpen} onClose={handleEditCancel} onSubmit={handleEditSubmit} initialTopic={editedTopic} />
     </div>
   );
 }
