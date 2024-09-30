@@ -104,7 +104,7 @@ function App() {
           setDialogOpen(true);
         }
       } else {
-        console.error("Invalid iconKey:", iconKey);
+        console.error("Invald iconKey: ", iconKey); 
       }
     }
   };
