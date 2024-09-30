@@ -1,55 +1,83 @@
-// Updated DropBox.jsx
-
 import React, { useState } from 'react';
 import IconComponent from './IconComponent';
 import TopicDialog from './TopicDialog';
+import { mqttSub, mqttUnsub } from './Subscribe'; // Ensure these functions are imported
 
-const DropBox = () => {
+const DropBox = ({ onDropIcon }) => {
   const [icons, setIcons] = useState([]);
   const [showDialog, setShowDialog] = useState(false);
-  const [currentIconData, setCurrentIconData] = useState(null);
+  const [currentIcon, setCurrentIcon] = useState(null);
+  const [currentPosition, setCurrentPosition] = useState(null);
 
   const handleIconDrop = (draggedIcon, position) => {
-    // Ensure each icon gets its own unique entry in the state
-    const newIcon = { ...draggedIcon, position, topic: '', iconKey: draggedIcon.iconKey }; 
-    setIcons((prevIcons) => [...prevIcons, newIcon]);
-    setCurrentIconData(null);
-    setShowDialog(true); // Show dialog to configure topic
-  };
+    const existingIcon = icons.find(icon => icon.iconKey === draggedIcon.iconKey);
 
-  const handleDialogSubmit = (topic, thresholds) => {
-    setIcons((prevIcons) =>
-      prevIcons.map(icon =>
-        icon === currentIconData ? { ...icon, topic, thresholds } : icon
-      )
-    );
-    setShowDialog(false);
-    setCurrentIconData(null);
-  };
-
-  const handleUnsubscribe = (iconKey) => {
-    setIcons((prevIcons) => prevIcons.filter(icon => icon.iconKey !== iconKey));
+    if (existingIcon) {
+      // Update existing icon position
+      setIcons(prevIcons =>
+        prevIcons.map(icon =>
+          icon.iconKey === draggedIcon.iconKey ? { ...icon, position } : icon
+        )
+      );
+    } else {
+      // Add new icon
+      const newIcon = { ...draggedIcon, position, topic: '' };
+      setIcons(prev => [...prev, newIcon]);
+      setCurrentIcon(newIcon);
+      setCurrentPosition(position);
+      setShowDialog(true); // Show dialog for new icon topic
+    }
   };
 
   const handleDrop = (event) => {
     event.preventDefault();
-    const dropX = event.clientX;
-    const dropY = event.clientY;
+    const data = event.dataTransfer.getData('application/json');
+    const draggedData = JSON.parse(data);
+    
     const dropBox = event.currentTarget;
     const rect = dropBox.getBoundingClientRect();
-    const x = dropX - rect.left;
-    const y = dropY - rect.top;
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
 
-    const draggedData = JSON.parse(event.dataTransfer.getData('application/json'));
     handleIconDrop(draggedData, { x, y });
   };
 
-  const handleExternalDrag = (e) => {
-    setCurrentIconData(true);
+  const handleDialogSubmit = (topic, colorThresholds) => {
+    if (currentIcon && topic.trim()) {
+      const trimmedTopic = topic.trim();
+      
+      if (!icons.some(icon => icon.topic === trimmedTopic)) {
+        const updatedIcons = icons.map(icon =>
+          icon.iconKey === currentIcon.iconKey ? { ...icon, topic: trimmedTopic } : icon
+        );
+
+        setIcons(updatedIcons);
+        
+        // Subscribe to the new topic using mqttSub
+        mqttSub(trimmedTopic, (receivedTopic, message) => {
+          const value = parseFloat(message);
+          setIcons(prev =>
+            prev.map(icon =>
+              icon.topic === receivedTopic ? { ...icon, latestValue: value } : icon
+            )
+          );
+        });
+
+        setShowDialog(false);
+        setCurrentIcon(null);
+        setCurrentPosition(null);
+      } else {
+        alert("An icon with this topic already exists. Please enter a unique topic.");
+      }
+    }
   };
 
-  const handleInternalDrag = () => {
-    setCurrentIconData(false);
+  const handleUnsubscribe = (iconKey) => {
+    const iconToUnsubscribe = icons.find(icon => icon.iconKey === iconKey);
+    if (iconToUnsubscribe) {
+      mqttUnsub(iconToUnsubscribe.topic);
+      setIcons(prevIcons => prevIcons.filter(icon => icon.iconKey !== iconKey));
+    }
   };
 
   return (
@@ -66,8 +94,7 @@ const DropBox = () => {
           position={icon.position}
           iconKey={icon.iconKey}
           handleUnsubscribe={handleUnsubscribe}
-          onPositionChange={handleIconDrop}
-          onDragStart={handleInternalDrag}
+          onPositionChange={handleIconDrop} // Update position when dragged
         />
       ))}
       {showDialog && (

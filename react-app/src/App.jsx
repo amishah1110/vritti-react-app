@@ -38,7 +38,7 @@ function App() {
     if (newTopic && !subscribedTopics.includes(newTopic)) {
       mqttSub(newTopic, (receivedTopic, message) => {
         const value = parseFloat(message);
-        console.log(`Received message on topic ${receivedTopic}: ${value}`); 
+        console.log(`Received message on topic ${receivedTopic}: ${value}`);
         setDroppedIcons((prev) =>
           prev.map((icon) =>
             icon.topic === receivedTopic ? { ...icon, latestValue: value } : icon
@@ -51,14 +51,14 @@ function App() {
   };
 
   const handleUnsubscribe = (iconKey) => {
-    const iconToUnsubscribe = droppedIcons.find(icon => icon.iconKey === iconKey);
+    const iconToUnsubscribe = droppedIcons.find((icon) => icon.iconKey === iconKey);
     if (iconToUnsubscribe) {
       mqttUnsub(iconToUnsubscribe.topic);
       setDroppedIcons((prevIcons) =>
-        prevIcons.filter(icon => icon.iconKey !== iconKey) 
+        prevIcons.filter((icon) => icon.iconKey !== iconKey)
       );
       setSubscribedTopics((prevTopics) =>
-        prevTopics.filter(topic => topic !== iconToUnsubscribe.topic)
+        prevTopics.filter((topic) => topic !== iconToUnsubscribe.topic)
       );
     }
   };
@@ -71,54 +71,55 @@ function App() {
   const handleDrop = (event) => {
     event.preventDefault();
     const data = event.dataTransfer.getData('application/json');
-  
+
     if (data && event.target.id === 'drop-box') {
       const { iconKey } = JSON.parse(data);
-      
       const rect = event.currentTarget.getBoundingClientRect();
       const x = event.clientX - rect.left;
       const y = event.clientY - rect.top;
-      
-      const existingIcon = droppedIcons.find(icon => icon.iconKey === iconKey);
-  
-      if (iconKey.includes('icon1') || iconKey.includes('icon2') || iconKey.includes('icon3')) {
-        const existingIcon = droppedIcons.find(icon => icon.iconKey === iconKey);
 
-        if (existingIcon) {
-          setDroppedIcons(prevIcons => 
-            prevIcons.map(icon => 
-              icon.iconKey === iconKey ? { ...icon, position: { x, y } } : icon
-            )
-          );
-        } else {
-          const newIcon = {
-            id: Date.now(), 
-            iconKey,
-            position: { x, y },
-            topic: pendingIcon?.topic || '',
-            color: iconMapping[iconKey]?.grey 
-          };
-  
-          setDroppedIcons(prev => [...prev, newIcon]);
-          setPendingIcon(newIcon);
-          setDialogOpen(true);
-        }
+      const existingIcon = droppedIcons.find(icon => icon.iconKey === iconKey);
+
+      if (existingIcon) {
+        // Update position of existing icon
+        setDroppedIcons((prevIcons) =>
+          prevIcons.map((icon) =>
+            icon.iconKey === iconKey ? { ...icon, position: { x, y } } : icon
+          )
+        );
       } else {
-        console.error("Invald iconKey: ", iconKey); 
+        // Create a new icon and set pending icon for topic dialog
+        const newIcon = {
+          id: Date.now(),
+          iconKey,
+          position: { x, y },
+          topic: '',  // Placeholder until dialog submits a topic
+          color: iconMapping[iconKey]?.grey
+        };
+
+        setDroppedIcons((prev) => [...prev, newIcon]);
+        setPendingIcon(newIcon);
+        setDialogOpen(true);
       }
     }
   };
-  
+
   const handleTopicSubmit = (topic, colorThresholds) => {
     if (pendingIcon && topic.trim()) {
       const trimmedTopic = topic.trim();
-      const uniqueIconKey = pendingIcon.iconKey; // Use original iconKey
+      const uniqueIconKey = pendingIcon.iconKey;
 
-      if (!droppedIcons.some(icon => icon.topic === trimmedTopic && icon.iconKey === uniqueIconKey)) {
-        setDroppedIcons((prev) => [
-          ...prev,
-          { ...pendingIcon, topic: trimmedTopic, iconKey: uniqueIconKey, colorThresholds }
-        ]);
+      // Check for unique topic before adding
+      if (!droppedIcons.some(icon => icon.topic === trimmedTopic)) {
+        const updatedIcon = {
+          ...pendingIcon,
+          topic: trimmedTopic,
+          colorThresholds,
+        };
+
+        setDroppedIcons((prev) =>
+          prev.map(icon => (icon.id === updatedIcon.id ? updatedIcon : icon))
+        );
 
         mqttSub(trimmedTopic, (receivedTopic, message) => {
           const value = parseFloat(message);
@@ -139,40 +140,65 @@ function App() {
 
   const handleEditSubmit = () => {
     if (editedTopic.trim() && editingIcon) {
-      const oldTopic = editingIcon.topic;
-      const newTopic = editedTopic.trim();
+        const oldTopic = editingIcon.topic;
+        const newTopic = editedTopic.trim();
 
-      if (oldTopic !== newTopic) {
-        mqttUnsub(oldTopic);
-        setDroppedIcons((prev) =>
-          prev.map((icon) =>
-            icon.id === editingIcon.id ? { ...icon, topic: newTopic } : icon
-          )
-        );
+        console.log(`Editing topic from "${oldTopic}" to "${newTopic}"`);
 
-        setSubscribedTopics((prevTopics) => {
-          const updatedTopics = prevTopics.filter((topic) => topic !== oldTopic);
-          return [...updatedTopics, newTopic];
-        });
+        if (oldTopic !== newTopic) {
+            // Unsubscribe from the old topic
+            mqttUnsub(oldTopic);
+            console.log(`Unsubscribed from old topic: ${oldTopic}`);
 
-        mqttSub(newTopic, (receivedTopic, message) => {
-          const value = parseFloat(message);
-          setDroppedIcons((prev) =>
-            prev.map((icon) =>
-              icon.topic === receivedTopic ? { ...icon, latestValue: value } : icon
-            )
-          );
-        });
-        
-        setEditDialogOpen(false);
-        setEditingIcon(null);
-      }
+            // Check for uniqueness before subscribing to the new topic
+            if (!subscribedTopics.includes(newTopic) && !droppedIcons.some(icon => icon.topic === newTopic)) {
+                // Update the icon's topic
+                setDroppedIcons((prev) =>
+                    prev.map((icon) =>
+                        icon.id === editingIcon.id ? { ...icon, topic: newTopic } : icon
+                    )
+                );
+
+                // Update the subscribed topics state
+                setSubscribedTopics((prevTopics) => {
+                    const updatedTopics = prevTopics.filter((topic) => topic !== oldTopic);
+                    console.log(`Updated subscribed topics: ${[...updatedTopics, newTopic]}`);
+                    return [...updatedTopics, newTopic];
+                });
+
+                // Subscribe to the new topic for the updated icon
+                mqttSub(newTopic, (receivedTopic, message) => {
+                    const value = parseFloat(message);
+                    console.log(`Received message on topic ${receivedTopic}: ${value}`);
+                    setDroppedIcons((prev) =>
+                        prev.map((icon) =>
+                            icon.topic === receivedTopic ? { ...icon, latestValue: value } : icon
+                        )
+                    );
+                });
+
+                setEditDialogOpen(false);
+                setEditingIcon(null);
+                setEditedTopic(''); // Reset the edited topic
+            } else {
+                alert("This topic is already subscribed. Please enter a unique topic.");
+            }
+        } else {
+            console.log("No changes made to the topic.");
+            setEditDialogOpen(false);
+            setEditingIcon(null);
+            setEditedTopic(''); // Reset if no changes are made
+        }
+    } else {
+        console.log("Invalid topic or editingIcon is null");
     }
-  };
+};
+
 
   const handleEditCancel = () => {
     setEditDialogOpen(false);
     setEditingIcon(null);
+    setEditedTopic(''); // Reset the edited topic
   };
 
   const handlePositionChange = (iconKey, newPosition) => {
@@ -181,6 +207,12 @@ function App() {
         icon.iconKey === iconKey ? { ...icon, position: newPosition } : icon
       )
     );
+  };
+
+  const openEditDialog = (icon) => {
+    setEditingIcon(icon);
+    setEditedTopic(icon.topic); // Set the current topic in the edit dialog
+    setEditDialogOpen(true);
   };
 
   return (
@@ -233,15 +265,30 @@ function App() {
             position={icon.position}  
             iconKey={icon.iconKey}  
             handleUnsubscribe={handleUnsubscribe} 
-            onPositionChange={handlePositionChange}  
+            onPositionChange={handlePositionChange} 
+            setDroppedIcons={setDroppedIcons}
+            handleEdit={openEditDialog}  // Pass the edit handler
           />
         ))}
       </div>
 
-      <TopicDialog open={dialogOpen} onClose={() => setDialogOpen(false)} onSubmit={(topic, colorThresholds) => handleTopicSubmit(topic, colorThresholds)} initialTopic={newTopic} inputRef={inputRef} />
+      <TopicDialog 
+        open={dialogOpen} 
+        onClose={() => setDialogOpen(false)} 
+        onSubmit={handleTopicSubmit} 
+        initialTopic={newTopic} 
+        inputRef={inputRef} 
+      />
         
-      <TopicDialog open={editDialogOpen} onClose={handleEditCancel} onSubmit={handleEditSubmit} initialTopic={editedTopic} />
+      <TopicDialog 
+        open={editDialogOpen} 
+        onClose={handleEditCancel} 
+        onSubmit={handleEditSubmit} 
+        initialTopic={editedTopic} 
+        inputRef={inputRef} 
+      />
     </div>
   );
 }
+
 export default App;
