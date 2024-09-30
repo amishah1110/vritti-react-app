@@ -25,11 +25,11 @@ export const iconMapping = {
   'icon3': { grey: Icon3Grey, red: Icon3Red, blue: Icon3Blue, green: Icon3Green, yellow: Icon3Yellow },
 };
 
-const IconComponent = ({ hoverText, latestValue, position, onPositionChange, iconKey, topic = '', thresholds = [0, 15, 50, 75, 100], handleIconSelect, handleUnsubscribe }) => {
+const IconComponent = ({ hoverText, latestValue, position, onPositionChange, iconKey, topic = '', thresholds = [0, 15, 50, 75, 100], handleIconSelect, handleUnsubscribe, setDroppedIcons, subscribedTopics, setSubscribedTopics }) => {
   const [icon, setIcon] = useState(iconMapping[iconKey]?.grey);
   const [isEditing, setIsEditing] = useState(false);
   const [currentTopic, setCurrentTopic] = useState(topic);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState('No Data');
   const previousTopic = useRef(topic);
   const isSubscribed = useRef(false);
 
@@ -93,39 +93,31 @@ const IconComponent = ({ hoverText, latestValue, position, onPositionChange, ico
   };
 
   const handleSubscribe = () => {
-    if (newTopic && !subscribedTopics.includes(newTopic)) {
-      mqttSub(newTopic, (receivedTopic, message) => {
+    if (currentTopic && !subscribedTopics.includes(currentTopic)) {
+      mqttSub(currentTopic, (receivedTopic, message) => {
         const value = parseFloat(message);
-        console.log(`Received message on topic ${receivedTopic}: ${value}`); // Debug log
+        console.log(`Received message on topic ${receivedTopic}: ${value}`); 
         setDroppedIcons((prev) =>
           prev.map((icon) =>
             icon.topic === receivedTopic ? { ...icon, latestValue: value } : icon
           )
         );
       });
-  
-      // Set a default icon and drop it in the dropbox upon subscribing
-      const defaultIconKey = 'icon1'; // Choose an appropriate default icon, e.g., icon1
-      const defaultPosition = { x: 10, y: 10 }; // Default position in the dropbox (top-left corner)
-      
-      // Add the icon to the droppedIcons array
+
       const newIcon = {
-        id: Date.now(), // Ensure unique ID
-        iconKey: defaultIconKey,
-        position: defaultPosition,
-        topic: newTopic, // Assign the new subscribed topic to the icon
-        color: iconMapping[defaultIconKey]?.grey // Set color to default grey or any other
+        id: Date.now(), 
+        iconKey,
+        position: { x: 10, y: 10 }, 
+        topic: currentTopic,
+        color: iconMapping[iconKey]?.grey
       };
-  
+
       setDroppedIcons((prev) => [...prev, newIcon]);
-  
-      // Add the new topic to the subscribed topics list
-      setSubscribedTopics((prevTopics) => [...prevTopics, newTopic]);
-      
-      // Clear the input field
-      setNewTopic('');
+      setSubscribedTopics((prevTopics) => [...prevTopics, currentTopic]);
+      setIsEditing(false);
     }
-  }; 
+  };
+
   const handleCancel = () => {
     setCurrentTopic(previousTopic.current);
     setIsEditing(false);
@@ -142,7 +134,7 @@ const IconComponent = ({ hoverText, latestValue, position, onPositionChange, ico
   };
 
   const handleDrag = (event) => {
-    const newPosition = { x: event.clientX - 25, y: event.clientY - 25 }; 
+    const newPosition = { x: event.clientX - 25, y: event.clientY - 25 };
     onPositionChange(iconKey, newPosition);
   };
 
@@ -162,12 +154,14 @@ const IconComponent = ({ hoverText, latestValue, position, onPositionChange, ico
         top: position.y, 
         cursor: 'move', 
         zIndex: 1, 
-        textAlign: 'center' // Ensures text is centered under the icon
+        textAlign: 'center'
       }}
       onClick={handleIconSelect}
       id={iconKey}
       draggable
       onDragStart={handleDragStart}
+      onDrag={handleDrag}
+      onDragEnd={handleDragEnd}
       onDoubleClick={() => setIsEditing(true)}
     >
       <img
@@ -188,7 +182,7 @@ const IconComponent = ({ hoverText, latestValue, position, onPositionChange, ico
             style={{ padding: '5px', marginBottom: '5px', width: '150px', border: '1px solid #ccc', borderRadius: '4px' }}
             autoFocus
           />
-          <button onClick={handleSubs} style={{ margin: '5px', padding: '5px 10px', border: 'none', backgroundColor: '#007bff', color: 'white', borderRadius: '4px', cursor: 'pointer' }}>
+          <button onClick={handleSubscribe} style={{ margin: '5px', padding: '5px 10px', border: 'none', backgroundColor: '#007bff', color: 'white', borderRadius: '4px', cursor: 'pointer' }}>
             Submit
           </button>
           <button onClick={handleCancel} style={{ margin: '5px', padding: '5px 10px', border: 'none', backgroundColor: '#6c757d', color: 'white', borderRadius: '4px', cursor: 'pointer' }}>
