@@ -26,13 +26,13 @@ export const iconMapping = {
   'icon3': { grey: Icon3Grey, red: Icon3Red, blue: Icon3Blue, green: Icon3Green, yellow: Icon3Yellow },
 };
 
-const IconComponent = ({ hoverText, latestValue, position, onPositionChange, iconKey, topic = '', thresholds = [0, 15, 50, 75, 100], handleIconSelect, handleUnsubscribe,}) => {
+const IconComponent = ({ id, latestValue, position, onPositionChange, iconKey, topic = '', thresholds = [0, 15, 50, 75, 100], handleIconSelect, handleUnsubscribe,}) => {
   const [icon, setIcon] = useState(iconMapping[iconKey.split('-')[0]]?.grey); // Adjusted to extract base iconKey
   const [isEditing, setIsEditing] = useState(false);
   const [currentTopic, setCurrentTopic] = useState(topic);
   const [message, setMessage] = useState('No Data');
   const previousTopic = useRef(topic);
-  const isSubscribed = useRef(false);
+  const isSubscribed = useRef(true);
 
   useEffect(() => {
     if (iconMapping[iconKey.split('-')[0]]) {
@@ -93,8 +93,10 @@ const IconComponent = ({ hoverText, latestValue, position, onPositionChange, ico
     setCurrentTopic(e.target.value);
   };
 
-  const handleSubmit = () => {
-    if (currentTopic.trim()) {
+  const handleSubmit = (e) => {
+    const newTopic = document.getElementById("topic-input").value.trim();
+    
+    if (newTopic != "") {
       if (isSubscribed.current) {
         mqttUnsub(previousTopic.current); 
       }
@@ -102,12 +104,11 @@ const IconComponent = ({ hoverText, latestValue, position, onPositionChange, ico
       previousTopic.current = currentTopic;
       const uniqueSubscriptionId = iconKey; // Unique ID remains the same as iconKey is now unique
 
-      mqttSub(uniqueSubscriptionId, (receivedTopic, message) => {
+      mqttSub(newTopic, (receivedTopic, message) => {
         console.log("Received message:", message, "on topic:", receivedTopic);
         if (receivedTopic === uniqueSubscriptionId) {
           const value = parseFloat(message);
-          setMessage(message);
-          updateIconColor(value);
+          setMessage(message + "");
         }
       });
 
@@ -123,7 +124,7 @@ const IconComponent = ({ hoverText, latestValue, position, onPositionChange, ico
 
   const handleUnsubscribeClick = () => {
     mqttUnsub(previousTopic.current);
-    handleUnsubscribe(iconKey);
+    handleUnsubscribe(id);
     setMessage('No Data');
     previousTopic.current = '';
     setCurrentTopic('');
@@ -133,11 +134,11 @@ const IconComponent = ({ hoverText, latestValue, position, onPositionChange, ico
 
   const handleDrag = (event) => {
     const newPosition = { x: event.clientX - 25, y: event.clientY - 25 };
-    onPositionChange(iconKey, newPosition);
+    onPositionChange(event.target.id, newPosition);
   };
 
   const handleDragStart = (event) => {
-    event.dataTransfer.setData('application/json', JSON.stringify({ iconKey, topic }));
+    event.dataTransfer.setData('application/json', JSON.stringify({ iconKey, topic, id: event.target.id }));
   };
 
   const handleDragEnd = (event) => {
@@ -147,21 +148,22 @@ const IconComponent = ({ hoverText, latestValue, position, onPositionChange, ico
   return (
     <div style={{ position: 'absolute', left: position.x, top: position.y, cursor: 'move', zIndex: 1, textAlign: 'center',}}
       onClick={handleIconSelect}
-      id={iconKey} 
+      id={id} 
       draggable
       onDragStart={handleDragStart}
       onDoubleClick={() => setIsEditing(true)}
       onDrag={handleDrag} 
       onDragEnd={handleDragEnd} 
     >
-      <img src={icon} alt="Icon" style={{ width: '50px', height: '50px',cursor: 'pointer' }} title={hoverText}
+      <img src={icon} alt="Icon" style={{ width: '50px', height: '50px',cursor: 'pointer' }} title={`Topic: ${previousTopic.current}`}
       />
       <p
-        style={{ margin: '5px 0 0 0', fontSize: '12px', color: '#333', position: 'relative', top: '10px' }}>{message}</p>
+        style={{ margin: '5px 0 0 0', fontSize: '18px', color: '#333', position: 'relative' }}>{latestValue}</p>
 
       {isEditing && (
         <div style={{ marginTop: '10px', textAlign: 'center' }}>
           <input
+            id='topic-input'
             type="text"
             value={currentTopic}
             onChange={handleTopicChangeInput}

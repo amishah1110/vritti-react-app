@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import IconComponent from './IconComponent';
 import TopicDialog from './TopicDialog';
 import { mqttSub, mqttUnsub } from './Subscribe'; // Ensure these functions are imported
@@ -22,7 +22,7 @@ const DropBox = ({ onDropIcon }) => {
     } else {
       // Add new icon
       const newIcon = { ...draggedIcon, position, topic: '' };
-      setIcons(prev => [...prev, newIcon]);
+      setIcons(prev => prev.concat(draggedIcon));
       setCurrentIcon(newIcon);
       setCurrentPosition(position);
       setShowDialog(true); // Show dialog for new icon topic
@@ -87,7 +87,7 @@ const DropBox = ({ onDropIcon }) => {
       onDrop={handleDrop}
       style={{ position: 'relative', width: '100%', height: '500px', border: '1px solid #ccc' }}
     >
-      {icons.map((icon) => (
+      {icons.map((icon, index) => (
         <IconComponent
           key={icon.iconKey}
           topic={icon.topic}

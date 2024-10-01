@@ -50,15 +50,15 @@ function App() {
     }
   };
 
-  const handleUnsubscribe = (iconKey) => {
-    const iconToUnsubscribe = droppedIcons.find((icon) => icon.iconKey === iconKey);
+  const handleUnsubscribe = (id) => {
+    const iconToUnsubscribe = droppedIcons.find((icon) => icon.id == id);
     if (iconToUnsubscribe) {
       mqttUnsub(iconToUnsubscribe.topic);
       setDroppedIcons((prevIcons) =>
-        prevIcons.filter((icon) => icon.iconKey !== iconKey)
+        prevIcons.filter((icon) => icon.id != id)
       );
       setSubscribedTopics((prevTopics) =>
-        prevTopics.filter((topic) => topic !== iconToUnsubscribe.topic)
+        prevTopics.filter((topic) => topic != iconToUnsubscribe.topic)
       );
     }
   };
@@ -73,27 +73,23 @@ function App() {
     const data = event.dataTransfer.getData('application/json');
 
     if (data && event.target.id === 'drop-box') {
-      const { iconKey } = JSON.parse(data);
+      const { iconKey, topic, id } = JSON.parse(data);
       const rect = event.currentTarget.getBoundingClientRect();
       const x = event.clientX - rect.left;
       const y = event.clientY - rect.top;
 
-      const existingIcon = droppedIcons.find(icon => icon.iconKey === iconKey);
+      const existingIcon = droppedIcons.find(icon => icon.id == id);
 
       if (existingIcon) {
-        // Update position of existing icon
         setDroppedIcons((prevIcons) =>
-          prevIcons.map((icon) =>
-            icon.iconKey === iconKey ? { ...icon, position: { x, y } } : icon
-          )
-        );
+          prevIcons.map((icon) =>icon.id == id ? { ...icon, position: { x, y } } : icon));
       } else {
-        // Create a new icon and set pending icon for topic dialog
         const newIcon = {
-          id: Date.now(),
+          id: Date.now(), 
           iconKey,
-          position: { x, y },
-          topic: '',  // Placeholder until dialog submits a topic
+          position: { x, y }, 
+          thresholds: [0, 15, 50, 75, 100],
+          topic: '', 
           color: iconMapping[iconKey]?.grey
         };
 
@@ -107,19 +103,11 @@ function App() {
   const handleTopicSubmit = (topic, colorThresholds) => {
     if (pendingIcon && topic.trim()) {
       const trimmedTopic = topic.trim();
-      const uniqueIconKey = pendingIcon.iconKey;
 
-      // Check for unique topic before adding
-      if (!droppedIcons.some(icon => icon.topic === trimmedTopic)) {
-        const updatedIcon = {
-          ...pendingIcon,
-          topic: trimmedTopic,
-          colorThresholds,
-        };
+      if (!droppedIcons.some(icon => icon.topic == trimmedTopic)) {
+        const updatedIcon = {...pendingIcon, topic: trimmedTopic, thresholds:colorThresholds};
 
-        setDroppedIcons((prev) =>
-          prev.map(icon => (icon.id === updatedIcon.id ? updatedIcon : icon))
-        );
+        setDroppedIcons((prev) => prev.map(icon => (icon.id == updatedIcon.id ? updatedIcon : icon)));
 
         mqttSub(trimmedTopic, (receivedTopic, message) => {
           const value = parseFloat(message);
@@ -128,6 +116,8 @@ function App() {
               icon.topic === receivedTopic ? { ...icon, latestValue: value } : icon
             )
           );
+
+          console.log(droppedIcons);
         });
 
         setPendingIcon(null);
@@ -144,42 +134,30 @@ function App() {
         const newTopic = editedTopic.trim();
 
         console.log(`Editing topic from "${oldTopic}" to "${newTopic}"`);
-
         if (oldTopic !== newTopic) {
-            // Unsubscribe from the old topic
             mqttUnsub(oldTopic);
             console.log(`Unsubscribed from old topic: ${oldTopic}`);
 
-            // Check for uniqueness before subscribing to the new topic
-            if (!subscribedTopics.includes(newTopic) && !droppedIcons.some(icon => icon.topic === newTopic)) {
-                // Update the icon's topic
+            if (!subscribedTopics.includes(newTopic) && !droppedIcons.some(icon => icon.topic == newTopic)) {
                 setDroppedIcons((prev) =>
-                    prev.map((icon) =>
-                        icon.id === editingIcon.id ? { ...icon, topic: newTopic } : icon
-                    )
+                    prev.map((icon) => icon.id == editingIcon.id ? { ...icon, topic: newTopic } : icon)
                 );
-
-                // Update the subscribed topics state
                 setSubscribedTopics((prevTopics) => {
-                    const updatedTopics = prevTopics.filter((topic) => topic !== oldTopic);
+                    const updatedTopics = prevTopics.filter((topic) => topic != oldTopic);
                     console.log(`Updated subscribed topics: ${[...updatedTopics, newTopic]}`);
                     return [...updatedTopics, newTopic];
                 });
 
-                // Subscribe to the new topic for the updated icon
                 mqttSub(newTopic, (receivedTopic, message) => {
                     const value = parseFloat(message);
                     console.log(`Received message on topic ${receivedTopic}: ${value}`);
                     setDroppedIcons((prev) =>
-                        prev.map((icon) =>
-                            icon.topic === receivedTopic ? { ...icon, latestValue: value } : icon
-                        )
-                    );
+                        prev.map((icon) => icon.topic == receivedTopic ? { ...icon, latestValue: value } : icon));
                 });
 
                 setEditDialogOpen(false);
                 setEditingIcon(null);
-                setEditedTopic(''); // Reset the edited topic
+                setEditedTopic(''); 
             } else {
                 alert("This topic is already subscribed. Please enter a unique topic.");
             }
@@ -187,7 +165,7 @@ function App() {
             console.log("No changes made to the topic.");
             setEditDialogOpen(false);
             setEditingIcon(null);
-            setEditedTopic(''); // Reset if no changes are made
+            setEditedTopic('');
         }
     } else {
         console.log("Invalid topic or editingIcon is null");
@@ -201,10 +179,10 @@ function App() {
     setEditedTopic(''); // Reset the edited topic
   };
 
-  const handlePositionChange = (iconKey, newPosition) => {
+  const handlePositionChange = (id, newPosition) => {
     setDroppedIcons((prevIcons) =>
       prevIcons.map((icon) =>
-        icon.iconKey === iconKey ? { ...icon, position: newPosition } : icon
+        icon.id === id ? { ...icon, position: newPosition } : icon
       )
     );
   };
@@ -214,6 +192,11 @@ function App() {
     setEditedTopic(icon.topic); // Set the current topic in the edit dialog
     setEditDialogOpen(true);
   };
+
+  const updateThresholds = (updatedValues, iconIndex) => {
+    const icon = icons[iconIndex];
+    
+  }
 
   return (
     <div className="App">
@@ -250,20 +233,22 @@ function App() {
       </div>
 
       <div
-        id='drop-box'
-        style={{ width: 400, height: 300 }}
+        id='drop-box' //for dropbox fxning
+        style={{ width: 600, height: 350 }}
         className="dropbox"
         onDrop={handleDrop}
         onDragOver={(event) => event.preventDefault()}
       >
-        {droppedIcons.map((icon) => (
+        {droppedIcons.map((icon, index) => (
           <IconComponent  
             key={icon.id}
+            id={icon.id}
             topic={icon.topic}  
             hoverText={`Topic: ${icon.topic}`}  
             latestValue={icon.latestValue}  
             position={icon.position}  
             iconKey={icon.iconKey}  
+            thresholds={icon.thresholds}
             handleUnsubscribe={handleUnsubscribe} 
             onPositionChange={handlePositionChange} 
             setDroppedIcons={setDroppedIcons}
@@ -272,21 +257,9 @@ function App() {
         ))}
       </div>
 
-      <TopicDialog 
-        open={dialogOpen} 
-        onClose={() => setDialogOpen(false)} 
-        onSubmit={handleTopicSubmit} 
-        initialTopic={newTopic} 
-        inputRef={inputRef} 
-      />
+      <TopicDialog open={dialogOpen} onClose={() => setDialogOpen(false)} onSubmit={handleTopicSubmit} initialTopic={newTopic} inputRef={inputRef}/>
         
-      <TopicDialog 
-        open={editDialogOpen} 
-        onClose={handleEditCancel} 
-        onSubmit={handleEditSubmit} 
-        initialTopic={editedTopic} 
-        inputRef={inputRef} 
-      />
+      <TopicDialog open={editDialogOpen} onClose={handleEditCancel} onSubmit={handleEditSubmit} initialTopic={editedTopic} inputRef={inputRef}/>
     </div>
   );
 }
