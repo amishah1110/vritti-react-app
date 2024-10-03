@@ -2,29 +2,100 @@ import React, { useState, useEffect, useRef } from 'react';
 import { mqttSub, mqttUnsub } from '../Subscribe';
 
 // Import your icon files
-import Icon1Grey from '../icons/icon-grey.svg';
-import Icon1Red from '../icons/icon-red.svg';
-import Icon1Blue from '../icons/icon-blue.svg';
-import Icon1Yellow from '../icons/icon-yellow.svg';
-import Icon1Green from '../icons/icon-green.svg';
+import Icon1Grey from '../icons/bulb-grey.svg';
+import Icon1Red from '../icons/bulb-red.svg';
+import Icon1Blue from '../icons/bulb-blue.svg';
+import Icon1Yellow from '../icons/bulb-yellow.svg';
+import Icon1Green from '../icons/bulb-green.svg';
 
-import Icon2Grey from '../icons/hangout-grey.svg';
-import Icon2Red from '../icons/hangout-red.svg';
-import Icon2Blue from '../icons/hangout-blue.svg';
-import Icon2Green from '../icons/hangout-green.svg';
-import Icon2Yellow from '../icons/hangout-yellow.svg';
+import Icon2Grey from '../icons/fan-grey.svg';
+import Icon2Red from '../icons/fan-red.svg';
+import Icon2Blue from '../icons/fan-blue.svg';
+import Icon2Green from '../icons/fan-green.svg';
+import Icon2Yellow from '../icons/fan-yellow.svg';
 
-import Icon3Grey from '../icons/planner-grey.svg';
-import Icon3Red from '../icons/planner-red.svg';
-import Icon3Blue from '../icons/planner-blue.svg';
-import Icon3Green from '../icons/planner-green.svg';
-import Icon3Yellow from '../icons/planner-yellow.svg';
+import Icon3Grey from '../icons/gas-meter-grey.svg';
+import Icon3Red from '../icons/gas-meter-red.svg';
+import Icon3Blue from '../icons/gas-meter-blue.svg';
+import Icon3Green from '../icons/gas-meter-green.svg';
+import Icon3Yellow from '../icons/gas-meter-yellow.svg';
+
+import Icon4Grey from '../icons/heat-grey.svg';
+import Icon4Red from '../icons/heat-red.svg';
+import Icon4Blue from '../icons/heat-blue.svg';
+import Icon4Green from '../icons/heat-green.svg';
+import Icon4Yellow from '../icons/heat-yellow.svg';
+
+import Icon5Grey from '../icons/memory-grey.svg';
+import Icon5Red from '../icons/memory-red.svg';
+import Icon5Blue from '../icons/memory-blue.svg';
+import Icon5Green from '../icons/memory-green.svg';
+import Icon5Yellow from '../icons/memory-yellow.svg';
+
+import Icon6Grey from '../icons/oil-barrel-grey.svg';
+import Icon6Red from '../icons/oil-barrel-red.svg';
+import Icon6Blue from '../icons/oil-barrel-blue.svg';
+import Icon6Green from '../icons/oil-barrel-green.svg';
+import Icon6Yellow from '../icons/oil-barrel-yellow.svg';
+
+import Icon7Grey from '../icons/power-settings-grey.svg';
+import Icon7Red from '../icons/power-settings-red.svg';
+import Icon7Blue from '../icons/power-settings-blue.svg';
+import Icon7Green from '../icons/power-settings-green.svg';
+import Icon7Yellow from '../icons/power-settings-yellow.svg';
+
+import Icon8Grey from '../icons/propane-tank-grey.svg';
+import Icon8Red from '../icons/propane-tank-red.svg';
+import Icon8Blue from '../icons/propane-tank-blue.svg';
+import Icon8Green from '../icons/propane-tank-green.svg';
+import Icon8Yellow from '../icons/propane-tank-yellow.svg';
+
+import Icon9Grey from '../icons/thermostat-grey.svg';
+import Icon9Red from '../icons/thermostat-red.svg';
+import Icon9Blue from '../icons/thermostat-blue.svg';
+import Icon9Green from '../icons/thermostat-green.svg';
+import Icon9Yellow from '../icons/thermostat-yellow.svg';
+
+import Icon10Grey from '../icons/timer-grey.svg';
+import Icon10Red from '../icons/timer-red.svg';
+import Icon10Blue from '../icons/timer-blue.svg';
+import Icon10Green from '../icons/timer-green.svg';
+import Icon10Yellow from '../icons/timer-yellow.svg';
+
+import Icon11Grey from '../icons/valve-grey.svg';
+import Icon11Red from '../icons/valve-red.svg';
+import Icon11Blue from '../icons/valve-blue.svg';
+import Icon11Green from '../icons/valve-green.svg';
+import Icon11Yellow from '../icons/valve-yellow.svg';
+
+import Icon12Grey from '../icons/water-drop-grey.svg';
+import Icon12Red from '../icons/water-drop-red.svg';
+import Icon12Blue from '../icons/water-drop-blue.svg';
+import Icon12Green from '../icons/water-drop-green.svg';
+import Icon12Yellow from '../icons/water-drop-yellow.svg';
+
+import Icon13Grey from '../icons/wifi-grey.svg';
+import Icon13Red from '../icons/wifi-red.svg';
+import Icon13Blue from '../icons/wifi-blue.svg';
+import Icon13Green from '../icons/wifi-green.svg';
+import Icon13Yellow from '../icons/wifi-yellow.svg';
 
 export const iconMapping = {
   'icon1': { grey: Icon1Grey, red: Icon1Red, blue: Icon1Blue, green: Icon1Green, yellow: Icon1Yellow },
   'icon2': { grey: Icon2Grey, red: Icon2Red, blue: Icon2Blue, green: Icon2Green, yellow: Icon2Yellow },
   'icon3': { grey: Icon3Grey, red: Icon3Red, blue: Icon3Blue, green: Icon3Green, yellow: Icon3Yellow },
+  'icon4': { grey: Icon4Grey, red: Icon4Red, blue: Icon4Blue, green: Icon4Green, yellow: Icon4Yellow },
+  'icon5': { grey: Icon5Grey, red: Icon5Red, blue: Icon5Blue, green: Icon5Green, yellow: Icon5Yellow },
+  'icon6': { grey: Icon6Grey, red: Icon6Red, blue: Icon6Blue, green: Icon6Green, yellow: Icon6Yellow },
+  'icon7': { grey: Icon7Grey, red: Icon7Red, blue: Icon7Blue, green: Icon7Green, yellow: Icon7Yellow },
+  'icon8': { grey: Icon8Grey, red: Icon8Red, blue: Icon8Blue, green: Icon8Green, yellow: Icon8Yellow },
+  'icon9': { grey: Icon9Grey, red: Icon9Red, blue: Icon9Blue, green: Icon9Green, yellow: Icon9Yellow },
+  'icon10': { grey: Icon10Grey, red: Icon10Red, blue: Icon10Blue, green: Icon10Green, yellow: Icon10Yellow },
+  'icon11': { grey: Icon11Grey, red: Icon11Red, blue: Icon11Blue, green: Icon11Green, yellow: Icon11Yellow },
+  'icon12': { grey: Icon12Grey, red: Icon12Red, blue: Icon12Blue, green: Icon12Green, yellow: Icon12Yellow },
+  'icon13': { grey: Icon13Grey, red: Icon13Red, blue: Icon13Blue, green: Icon13Green, yellow: Icon13Yellow },
 };
+
 
 const IconComponent = ({ id, latestValue, position, onPositionChange, iconKey, topic = '', thresholds = [0, 15, 50, 75, 100], handleIconSelect, handleUnsubscribe,}) => {
   const [icon, setIcon] = useState(iconMapping[iconKey.split('-')[0]]?.grey); // Adjusted to extract base iconKey

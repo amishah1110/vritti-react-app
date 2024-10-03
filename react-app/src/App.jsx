@@ -3,9 +3,19 @@ import IconComponent from './components/icon-component';
 import { iconMapping } from './components/icon-component';
 import TopicDialog from './components/TopicDialog';
 import { mqttSub, mqttUnsub, initializeClient } from './Subscribe';
-import icon1 from './icons/icon-grey.svg';
-import icon2 from './icons/hangout-grey.svg';
-import icon3 from './icons/planner-grey.svg';
+import icon1 from './icons/bulb-grey.svg';
+import icon2 from './icons/fan-grey.svg';
+import icon3 from './icons/gas-meter-grey.svg';
+import icon4 from './icons/heat-grey.svg'
+import icon5 from './icons/memory-grey.svg'
+import icon6 from './icons/oil-barrel-grey.svg'
+import icon7 from './icons/power-settings-grey.svg';
+import icon8 from './icons/propane-tank-grey.svg';
+import icon9 from './icons/thermostat-grey.svg';
+import icon10 from './icons/timer-grey.svg';
+import icon11 from './icons/valve-grey.svg';
+import icon12 from './icons/water-drop-grey.svg';
+import icon13 from './icons/wifi-grey.svg';
 import './styles.css';
 
 function App() {
@@ -230,6 +240,67 @@ function App() {
           draggable
           onDragStart={(event) => handleDragStart(event, 'icon3')}
         />
+        <img
+          src={icon4}
+          alt="icon-4"
+          draggable
+          onDragStart={(event) => handleDragStart(event, 'icon4')}
+        />
+        <img
+          src={icon5}
+          alt="icon-5"
+          draggable
+          onDragStart={(event) => handleDragStart(event, 'icon5')}
+        />
+        <img
+          src={icon6}
+          alt="icon-6"
+          draggable
+          onDragStart={(event) => handleDragStart(event, 'icon6')}
+        />
+        <img
+          src={icon7}
+          alt="icon-7"
+          draggable
+          onDragStart={(event) => handleDragStart(event, 'icon7')}
+        />
+        <img
+          src={icon8}
+          alt="icon-8"
+          draggable
+          onDragStart={(event) => handleDragStart(event, 'icon8')}
+        />
+        <img
+          src={icon9}
+          alt="icon-9"
+          draggable
+          onDragStart={(event) => handleDragStart(event, 'icon9')}
+        />
+        <img
+          src={icon10}
+          alt="icon-10"
+          draggable
+          onDragStart={(event) => handleDragStart(event, 'icon10')}
+        />
+        <img
+          src={icon11}
+          alt="icon-11"
+          draggable
+          onDragStart={(event) => handleDragStart(event, 'icon11')}
+        />
+        <img
+          src={icon12}
+          alt="icon-12"
+          draggable
+          onDragStart={(event) => handleDragStart(event, 'icon12')}
+        />
+        <img
+          src={icon13}
+          alt="icon-13"
+          draggable
+          onDragStart={(event) => handleDragStart(event, 'icon13')}
+        />
+
       </div>
 
       <div
