@@ -1,5 +1,5 @@
 body {
-    background: linear-gradient(to right, #f9f9f9, #aee5ff);
+    background: linear-gradient(to left, #f9f9f9, #aee5ff);
     font-family: Arial, sans-serif;
     color: #000;
     margin: 0;
@@ -64,7 +64,7 @@ button.unsubscribeButton:hover {
 
 .drag-container {
     display: flex;
-    justify-content: center;
+    justify-content: left;
     align-items: center;
     margin-bottom: 20px;
     gap: 15px;
@@ -94,7 +94,7 @@ button.unsubscribeButton:hover {
     background-color: #f9f9f9;
     border: 2px dashed #333;
     padding: 10px;
-    margin: 20px 0;
+    margin: 20px 20px 20px 0;
     overflow: hidden;
     transition: background-color 0.3s ease ;
 }
@@ -109,8 +109,8 @@ button.unsubscribeButton:hover {
 .dialog-overlay {
     position: absolute; /* Positioned within the container */
     top: 50%; /* Align with the top of the dropbox */
-    left: 50%; /* Position to the right of the dropbox */
-    transform: translate(-50%, -50%);
+    right: 0; /* Position to the right of the dropbox */
+    transform: translate(-50%);
     width: 400px; /* Fixed width */
     z-index: 1000; /* Ensure this is on top of other elements */
     display: flex;
@@ -212,7 +212,7 @@ button.unsubscribeButton:hover {
 }
 
 #edit-topic-submit, #edit-topic-cancel {
-    padding: 10px 20px;
+    padding: 10px 10px;
     border-radius: 4px;
     border: none;
     color: #fff;

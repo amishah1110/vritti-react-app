@@ -15,7 +15,7 @@ const TopicDialog = ({ open, onClose, onSubmit, initialTopic = '', inputRef }) =
       setError('');
       setIsSubmitting(false);
       if (inputRef.current) {
-        inputRef.current.focus(); // Focus on the input field when the dialog opens
+        inputRef.current.focus(); 
       }
     }
   }, [open, initialTopic, inputRef]);

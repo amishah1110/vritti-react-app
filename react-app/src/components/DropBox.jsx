@@ -9,15 +9,21 @@ const DropBox = ({ onDropIcon }) => {
   const [showDialog, setShowDialog] = useState(false);
   const [currentIcon, setCurrentIcon] = useState(null);
   const [currentPosition, setCurrentPosition] = useState(null);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    // Remove icons with null topics
+    setIcons(prevIcons => prevIcons.filter(icon => icon.topic !== null));
+}, [icons]);
 
   const handleIconDrop = (draggedIcon, position) => {
-    const existingIcon = icons.find(icon => icon.iconKey === draggedIcon.iconKey);
+    const existingIcon = icons.find(icon => icon.id === draggedIcon.id);
 
     if (existingIcon) {
       // Update existing icon position
       setIcons(prevIcons =>
         prevIcons.map(icon =>
-          icon.iconKey === draggedIcon.iconKey ? { ...icon, position } : icon
+          icon.id === draggedIcon.id ? { ...icon, position } : icon
         )
       );
     } else {
@@ -43,47 +49,42 @@ const DropBox = ({ onDropIcon }) => {
     handleIconDrop(draggedData, { x, y });
   };
 
-  const handleDialogSubmit = (topic, colorThresholds) => {
-    if (currentIcon && topic.trim()) {
-      const trimmedTopic = topic.trim();
-      
-      if (!icons.some(icon => icon.topic === trimmedTopic)) {
-        const updatedIcons = icons.map(icon =>
-          icon.iconKey === currentIcon.iconKey ? { ...icon, topic: trimmedTopic } : icon
+  const handleDialogSubmit = (newTopic, colorThresholds) => {
+    if (currentIcon && newTopic.trim()) {
+        // Unsubscribe from the old topic
+        mqttUnsub(currentIcon.topic);
+        
+        // Update the icon with the new topic
+        const updatedIcons = icons.map(icon => 
+            icon.iconKey === currentIcon.iconKey 
+                ? { ...icon, topic: newTopic } 
+                : icon
         );
 
         setIcons(updatedIcons);
         
-        // Subscribe to the new topic using mqttSub
-        mqttSub(trimmedTopic, (receivedTopic, message) => {
-          const value = parseFloat(message);
-          setIcons(prev =>
-            prev.map(icon =>
-              icon.topic === receivedTopic ? { ...icon, latestValue: value } : icon
-            )
-          );
+        // Subscribe to the new topic
+        mqttSub(newTopic, (receivedTopic, message) => {
+            console.log(`Received message on topic ${receivedTopic}: ${message}`);
         });
 
-        setShowDialog(false);
-        setCurrentIcon(null);
-        setCurrentPosition(null);
-      } else {
-        alert("An icon with this topic already exists. Please enter a unique topic.");
-      }
+    } else {
+        // Handle null topic case
+        handleUnsubscribe(currentIcon.iconKey);
     }
-  };
+};
 
-  const handleUnsubscribe = (iconKey) => {
-    const iconToUnsubscribe = icons.find(icon => icon.iconKey === iconKey);
+
+  const handleUnsubscribe = (id) => {
+    const iconToUnsubscribe = icons.find(icon => icon.id === id);
     if (iconToUnsubscribe) {
       mqttUnsub(iconToUnsubscribe.topic);
-      setIcons(prevIcons => prevIcons.filter(icon => icon.iconKey !== iconKey));
+      setIcons(prevIcons => prevIcons.filter(icon => icon.id !== id));
     }
   };
 
   return (
     <div>
-      {/* Shifted DropBox to the left */}
       <div
         className="dropbox"
         onDragOver={(e) => e.preventDefault()}
@@ -92,10 +93,10 @@ const DropBox = ({ onDropIcon }) => {
           position: 'absolute',
           left: 0, // Align DropBox to the left side
           top: 0,
-          width: '300px', // Adjust width as needed
+          width: '300px', 
           height: '500px',
           border: '1px solid #ccc',
-          marginRight: '20px' // Adds some space between dropbox and other elements
+          marginRight: '20px'
         }}
       >
         {icons.map((icon, index) => (
@@ -109,8 +110,7 @@ const DropBox = ({ onDropIcon }) => {
           />
         ))}
       </div>
-
-      {/* TopicDialog positioned to the right */}
+      
       {showDialog && (
         <TopicDialog
           open={showDialog}

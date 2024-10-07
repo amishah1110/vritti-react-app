@@ -80,6 +80,7 @@ import Icon13Blue from '../icons/wifi-blue.svg';
 import Icon13Green from '../icons/wifi-green.svg';
 import Icon13Yellow from '../icons/wifi-yellow.svg';
 
+//mapping iconKeys to respective icon states
 export const iconMapping = {
   'icon1': { grey: Icon1Grey, red: Icon1Red, blue: Icon1Blue, green: Icon1Green, yellow: Icon1Yellow },
   'icon2': { grey: Icon2Grey, red: Icon2Red, blue: Icon2Blue, green: Icon2Green, yellow: Icon2Yellow },
@@ -106,6 +107,7 @@ const IconComponent = ({ id, latestValue, position, onPositionChange, iconKey, t
   const [isBlinking, setIsBlinking] = useState(false);
   const isSubscribed = useRef(true);
 
+  // Update icon when the iconKey changes
   useEffect(() => {
     if (iconMapping[iconKey.split('-')[0]]) {
       setIcon(iconMapping[iconKey.split('-')[0]].grey);
@@ -115,6 +117,7 @@ const IconComponent = ({ id, latestValue, position, onPositionChange, iconKey, t
     }
   }, [iconKey]);
 
+   // Update icon color based on latest value
   useEffect(() => {
     if (latestValue !== undefined) {
       const numericValue = typeof latestValue === 'number' ? latestValue : parseFloat(latestValue);
@@ -124,6 +127,7 @@ const IconComponent = ({ id, latestValue, position, onPositionChange, iconKey, t
     }
   }, [latestValue]);
 
+  //update current topic when edited
   useEffect(() => {
     if (topic !== previousTopic.current) {
       setCurrentTopic(topic || '');
@@ -131,6 +135,7 @@ const IconComponent = ({ id, latestValue, position, onPositionChange, iconKey, t
     }
   }, [topic]);
 
+  //update icon color based on value and threshold defined
   const updateIconColor = (value) => {
     if (!iconMapping[iconKey.split('-')[0]]) {
       console.error(`Icon mapping for iconKey "${iconKey}" not found.`);
@@ -165,13 +170,14 @@ const IconComponent = ({ id, latestValue, position, onPositionChange, iconKey, t
   };
 
   const checkThresholds = (value) => {
-    console.log("going inside checkThresholds method")
+    //console.log("going inside checkThresholds method")
     const [t1, t5] = thresholds;
     if (value < t1 || value > t5) {
       setIsBlinking(true); 
-      setTimeout(() => {
-        setIsBlinking(false); 
-      }, 3000); 
+      setTimeout(() => { setIsBlinking(false); }, 1000); 
+    }
+    else {
+      setIsBlinking(false); //no blinking reqd as value within range
     }
   };
 
@@ -188,31 +194,41 @@ const IconComponent = ({ id, latestValue, position, onPositionChange, iconKey, t
     setCurrentTopic(e.target.value);
   };
 
+  //submission of new topic
   const handleSubmit = (e) => {
     const newTopic = document.getElementById("topic-input").value.trim();
     
-    if (newTopic != "") {
+    if (newTopic !== "") {
       if (isSubscribed.current) {
-        mqttUnsub(previousTopic.current); 
+        mqttUnsub(previousTopic.current);  // Unsubscribe from the previous topic
       }
 
-      // previousTopic.current = currentTopic;
-       previousTopic.current = newTopic; //changed this line
-      const uniqueSubscriptionId = iconKey; // Unique ID remains the same as iconKey is now unique
-
+      previousTopic.current = newTopic; // Store the new topic in previousTopic
+      
+      // Create a unique subscription ID based on the icon's unique key
+      const uniqueSubscriptionId = `${iconKey}-${newTopic}`; 
+      
+      // Subscribe to the new topic
       mqttSub(newTopic, (receivedTopic, message) => {
-        console.log("Received message:", message, "on topic:", receivedTopic);
-        if (receivedTopic === uniqueSubscriptionId) {
-          const value = parseFloat(message);
+        console.log(`Received message: ${message} on topic: ${receivedTopic}`);
+        
+        // Check if the received message corresponds to this icon's topic
+        if (receivedTopic === newTopic) {
+          const value = parseFloat(message); // Convert the message to a numeric value
           setMessage(message + "");
+          
+          // Update the icon color based on the received message
+          updateIconColor(value); 
         }
       });
 
-      isSubscribed.current = true;
-      setIsEditing(false);
+      isSubscribed.current = true;  // Mark this icon as subscribed
+      setIsEditing(false);  // Exit editing mode
     }
   };
 
+
+  //cancellation of topic editing
   const handleCancel = () => {
     setCurrentTopic(previousTopic.current);
     setIsEditing(false);
@@ -232,37 +248,14 @@ const IconComponent = ({ id, latestValue, position, onPositionChange, iconKey, t
     const newPosition = { x: event.clientX - 25, y: event.clientY - 25 };
     onPositionChange(event.target.id, newPosition);
   };
-
+  //start of drag event
   const handleDragStart = (event) => {
     event.dataTransfer.setData('application/json', JSON.stringify({ iconKey, topic, id: event.target.id }));
   };
 
+  //end f drag event
   const handleDragEnd = (event) => {
     event.preventDefault();
-  };
-
-  const SCADAApp = () => {
-    const [thresholds, setThresholds] = useState([0, 25, 50, 75, 100]);
-    const [latestValue, setLatestValue] = useState(null);
-    const [showToast, setShowToast] = useState(false);
-  
-    const checkThresholds = (value) => {
-      const [t1, t2, t3, t4, t5] = thresholds;
-      
-      if (value < t1 || value > t5) {
-        // Value is outside the defined range
-        triggerToast(`Value ${value} is out of range!`);
-      }
-    };
-  
-    return (
-      <div className="scada-container">
-        {showToast && <ToastNotification message={`Alert! Latest value ${latestValue} is out of range!`} onClose={() => setShowToast(false)} />}
-        <div className="scada-display">
-          {/* Display and monitor the latest values here */}
-        </div>
-      </div>
-    );
   };
 
   return (
@@ -275,22 +268,9 @@ const IconComponent = ({ id, latestValue, position, onPositionChange, iconKey, t
       onDrag={handleDrag} 
       onDragEnd={handleDragEnd} 
     >
-      <img 
-  src={icon} 
-  alt="Icon" 
-  style={{ 
-    width: '50px', 
-    height: '50px', 
-    cursor: 'pointer' 
-  }} 
-  className={isBlinking ? 'blink-animation' : ''} 
-  title={`Topic: ${previousTopic.current}`} 
-/>
+      <img src={icon} alt="Icon" style={{  width: '50px', height: '50px', cursor: 'pointer' }} className={isBlinking ? 'blink-animation' : ''} title={`Topic: ${previousTopic.current}`} />
 
-      {/* <img src={icon} alt="Icon" style={{ width: '50px', height: '50px',cursor: 'pointer' }} title={`Topic: ${previousTopic.current}`}
-      /> */}
-      <p
-        style={{ margin: '5px 0 0 0', fontSize: '18px', color: '#333', position: 'relative' }}>{latestValue}</p>
+      <p style={{ margin: '5px 0 0 0', fontSize: '18px', color: '#333', position: 'relative' }}>{latestValue}</p>
 
       {isEditing && (
         <div style={{ marginTop: '10px', textAlign: 'center' }}>
