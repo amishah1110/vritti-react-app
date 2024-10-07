@@ -1,20 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { mqttSub, mqttUnsub } from '../Subscribe';
+import { mqttSub } from '../Subscribe';
+import '../styles.css';
 
 const TopicDialog = ({ open, onClose, onSubmit, initialTopic = '', inputRef }) => {
   const [topic, setTopic] = useState(initialTopic);
   const [thresholds, setThresholds] = useState([0, 25, 50, 75, 100]);
   const [error, setError] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false); // Track if submission is in progress
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (open) {
       setTopic(initialTopic);
       setThresholds([0, 25, 50, 75, 100]);
       setError('');
-      setIsSubmitting(false); 
+      setIsSubmitting(false);
+      if (inputRef.current) {
+        inputRef.current.focus(); // Focus on the input field when the dialog opens
+      }
     }
-  }, [open, initialTopic]);
+  }, [open, initialTopic, inputRef]);
 
   const handleThresholdChange = (index, value) => {
     const newThresholds = [...thresholds];
@@ -42,9 +46,9 @@ const TopicDialog = ({ open, onClose, onSubmit, initialTopic = '', inputRef }) =
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (!validateInput() || isSubmitting) return; 
+    if (!validateInput() || isSubmitting) return;
 
-    setIsSubmitting(true); 
+    setIsSubmitting(true);
 
     onSubmit(topic.trim(), thresholds);
     mqttSub(topic.trim(), (receivedTopic, message) => {
@@ -56,25 +60,45 @@ const TopicDialog = ({ open, onClose, onSubmit, initialTopic = '', inputRef }) =
   };
 
   const handleClose = () => {
+    setTopic(initialTopic); // Reset topic when closing
+    setThresholds([0, 25, 50, 75, 100]); // Reset thresholds
+    setError(''); // Clear error message
     onClose();
   };
 
   if (!open) return null;
 
   return (
-    <div className="dialog-overlay" style={{ zIndex: 2 }}>
+    <div className="dialog-overlay">
       <div className="dialog-content">
         <h2>Configure Topic</h2>
         <form onSubmit={handleSubmit}>
-          <input id="topic" type="text" value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="Enter topic name" autoFocus ref={inputRef} className="input-field"/>
+          <input
+            id="topic"
+            type="text"
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+            placeholder="Enter topic name"
+            autoFocus
+            ref={inputRef}
+            className="input-field" // This class will use your existing CSS
+          />
           {thresholds.map((threshold, index) => (
             <div key={index} className="threshold-input">
               <label>{`Threshold ${index + 1}:`}</label>
-              <input id={`threshold_${index}`} type="number" value={threshold} onChange={(e) => handleThresholdChange(index, e.target.value)} min="0" step="0.01" className="threshold-field" />
+              <input
+                id={`threshold_${index}`}
+                type="number"
+                value={threshold}
+                onChange={(e) => handleThresholdChange(index, e.target.value)}
+                min="0"
+                step="0.01"
+                className="threshold-field" // Ensure this class is defined in your CSS
+              />
             </div>
           ))}
-          {error && <div className="error-message">{error}</div>}
-          <div className="dialog-buttons">
+          {error && <div className="error-message" style={{ color: 'red', marginBottom: '10px' }}>{error}</div>}
+          <div className="dialog-buttons" style={{ display: 'flex', justifyContent: 'space-between' }}>
             <button type="submit" className="submitDialogButton" disabled={isSubmitting}>
               {isSubmitting ? 'Submitting...' : 'Subscribe'}
             </button>

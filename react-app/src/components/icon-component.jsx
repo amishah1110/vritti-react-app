@@ -103,6 +103,7 @@ const IconComponent = ({ id, latestValue, position, onPositionChange, iconKey, t
   const [currentTopic, setCurrentTopic] = useState(topic);
   const [message, setMessage] = useState('No Data');
   const previousTopic = useRef(topic);
+  const [isBlinking, setIsBlinking] = useState(false);
   const isSubscribed = useRef(true);
 
   useEffect(() => {
@@ -154,11 +155,34 @@ const IconComponent = ({ id, latestValue, position, onPositionChange, iconKey, t
       newIcon = iconMapping[iconKey.split('-')[0]]?.red;
     } else {
       console.error('Value out of range:', value);
+      newIcon = iconMapping[iconKey.split('-')[0]]?.grey;
+      triggerBlinking();
       return;
     }
-
+    setIsBlinking(false);
     setIcon(newIcon);
+    checkThresholds(value);
   };
+
+  const checkThresholds = (value) => {
+    console.log("going inside checkThresholds method")
+    const [t1, t5] = thresholds;
+    if (value < t1 || value > t5) {
+      setIsBlinking(true); 
+      setTimeout(() => {
+        setIsBlinking(false); 
+      }, 3000); 
+    }
+  };
+
+  const triggerBlinking = () => {
+    setIsBlinking(true);
+    setIcon(iconMapping[iconKey.split('-')[0]]?.grey);
+    setTimeout(() => {
+        setIsBlinking(false);
+    }, 10000); // Duration of blinking effect
+  };
+
 
   const handleTopicChangeInput = (e) => {
     setCurrentTopic(e.target.value);
@@ -172,7 +196,8 @@ const IconComponent = ({ id, latestValue, position, onPositionChange, iconKey, t
         mqttUnsub(previousTopic.current); 
       }
 
-      previousTopic.current = currentTopic;
+      // previousTopic.current = currentTopic;
+       previousTopic.current = newTopic; //changed this line
       const uniqueSubscriptionId = iconKey; // Unique ID remains the same as iconKey is now unique
 
       mqttSub(newTopic, (receivedTopic, message) => {
@@ -216,6 +241,30 @@ const IconComponent = ({ id, latestValue, position, onPositionChange, iconKey, t
     event.preventDefault();
   };
 
+  const SCADAApp = () => {
+    const [thresholds, setThresholds] = useState([0, 25, 50, 75, 100]);
+    const [latestValue, setLatestValue] = useState(null);
+    const [showToast, setShowToast] = useState(false);
+  
+    const checkThresholds = (value) => {
+      const [t1, t2, t3, t4, t5] = thresholds;
+      
+      if (value < t1 || value > t5) {
+        // Value is outside the defined range
+        triggerToast(`Value ${value} is out of range!`);
+      }
+    };
+  
+    return (
+      <div className="scada-container">
+        {showToast && <ToastNotification message={`Alert! Latest value ${latestValue} is out of range!`} onClose={() => setShowToast(false)} />}
+        <div className="scada-display">
+          {/* Display and monitor the latest values here */}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div style={{ position: 'absolute', left: position.x, top: position.y, cursor: 'move', zIndex: 1, textAlign: 'center',}}
       onClick={handleIconSelect}
@@ -226,8 +275,20 @@ const IconComponent = ({ id, latestValue, position, onPositionChange, iconKey, t
       onDrag={handleDrag} 
       onDragEnd={handleDragEnd} 
     >
-      <img src={icon} alt="Icon" style={{ width: '50px', height: '50px',cursor: 'pointer' }} title={`Topic: ${previousTopic.current}`}
-      />
+      <img 
+  src={icon} 
+  alt="Icon" 
+  style={{ 
+    width: '50px', 
+    height: '50px', 
+    cursor: 'pointer' 
+  }} 
+  className={isBlinking ? 'blink-animation' : ''} 
+  title={`Topic: ${previousTopic.current}`} 
+/>
+
+      {/* <img src={icon} alt="Icon" style={{ width: '50px', height: '50px',cursor: 'pointer' }} title={`Topic: ${previousTopic.current}`}
+      /> */}
       <p
         style={{ margin: '5px 0 0 0', fontSize: '18px', color: '#333', position: 'relative' }}>{latestValue}</p>
 

@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import IconComponent from './IconComponent';
 import TopicDialog from './TopicDialog';
-import { mqttSub, mqttUnsub } from './Subscribe'; // Ensure these functions are imported
+import { mqttSub, mqttUnsub } from './Subscribe';
+import '../styles.css';
 
 const DropBox = ({ onDropIcon }) => {
   const [icons, setIcons] = useState([]);
@@ -22,7 +23,7 @@ const DropBox = ({ onDropIcon }) => {
     } else {
       // Add new icon
       const newIcon = { ...draggedIcon, position, topic: '' };
-      setIcons(prev => prev.concat(draggedIcon));
+      setIcons(prev => prev.concat(newIcon));
       setCurrentIcon(newIcon);
       setCurrentPosition(position);
       setShowDialog(true); // Show dialog for new icon topic
@@ -81,27 +82,41 @@ const DropBox = ({ onDropIcon }) => {
   };
 
   return (
-    <div
-      className="dropbox"
-      onDragOver={(e) => e.preventDefault()}
-      onDrop={handleDrop}
-      style={{ position: 'relative', width: '100%', height: '500px', border: '1px solid #ccc' }}
-    >
-      {icons.map((icon, index) => (
-        <IconComponent
-          key={icon.iconKey}
-          topic={icon.topic}
-          position={icon.position}
-          iconKey={icon.iconKey}
-          handleUnsubscribe={handleUnsubscribe}
-          onPositionChange={handleIconDrop} // Update position when dragged
-        />
-      ))}
+    <div>
+      {/* Shifted DropBox to the left */}
+      <div
+        className="dropbox"
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={handleDrop}
+        style={{
+          position: 'absolute',
+          left: 0, // Align DropBox to the left side
+          top: 0,
+          width: '300px', // Adjust width as needed
+          height: '500px',
+          border: '1px solid #ccc',
+          marginRight: '20px' // Adds some space between dropbox and other elements
+        }}
+      >
+        {icons.map((icon, index) => (
+          <IconComponent
+            key={icon.iconKey}
+            topic={icon.topic}
+            position={icon.position}
+            iconKey={icon.iconKey}
+            handleUnsubscribe={handleUnsubscribe}
+            onPositionChange={handleIconDrop} // Update position when dragged
+          />
+        ))}
+      </div>
+
+      {/* TopicDialog positioned to the right */}
       {showDialog && (
         <TopicDialog
           open={showDialog}
           onClose={() => setShowDialog(false)}
           onSubmit={handleDialogSubmit}
+          dialogStyle={{ right: 0 }} // Add style prop for dialog to position it to the right
         />
       )}
     </div>

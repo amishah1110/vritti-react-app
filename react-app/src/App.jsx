@@ -126,8 +126,6 @@ function App() {
               icon.topic === receivedTopic ? { ...icon, latestValue: value } : icon
             )
           );
-
-          console.log(droppedIcons);
         });
 
         setPendingIcon(null);
@@ -305,7 +303,7 @@ function App() {
 
       <div
         id='drop-box' //for dropbox fxning
-        style={{ width: 600, height: 350 }}
+        style={{ width: 800, height: 350 }}
         className="dropbox"
         onDrop={handleDrop}
         onDragOver={(event) => event.preventDefault()}
