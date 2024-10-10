@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import IconComponent from './components/icon-component';
+import { useNavigate } from 'react-router-dom';
+import DrawingCanvas from './DrawingCanvas';
 import { iconMapping } from './components/icon-component';
 import TopicDialog from './components/TopicDialog';
 import { mqttSub, mqttUnsub, initializeClient } from './Subscribe';
@@ -29,6 +31,8 @@ function App() {
   const [droppedIcons, setDroppedIcons] = useState([]);
   const [pendingIcon, setPendingIcon] = useState(null);
   const inputRef = useRef(null);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     initializeClient();
@@ -206,17 +210,22 @@ function App() {
     
   }
 
+  const handleDrawButtonClick = () => {
+    navigate('/draw');
+  };
+
   return (
     <div className="App">
       <div className="subscription-container">
         <h1>MQTT Subscription</h1>
-        <input
+        {/* <input
           type="text"
           placeholder="Enter topic to subscribe"
           value={newTopic}
           onChange={handleTopicChange}
         />
-        <button className="subscribeButton" onClick={handleSubscribe}>Subscribe</button>
+        <button className="subscribeButton" onClick={handleSubscribe}>Subscribe</button> */}
+        <button className="drawButton" onClick={()=> navigate('/draw')}> Draw </button>
       </div>
 
       <div className="drag-container">
@@ -330,6 +339,7 @@ function App() {
         
       <TopicDialog open={editDialogOpen} onClose={handleEditCancel} onSubmit={handleEditSubmit} initialTopic={editedTopic} inputRef={inputRef}/>
     </div>
+    
   );
 }
 
