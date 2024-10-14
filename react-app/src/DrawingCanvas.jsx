@@ -192,22 +192,6 @@ const DrawingCanvas = () => {
     localStorage.setItem('drawingCount', newCount);
   };
 
-  // const renderSavedDrawings = () => {
-  //   const savedDrawings = [];
-  //   for (let i = 0; i < localStorage.length; i++) {
-  //     const key = localStorage.key(i);
-  //     if (key !== 'drawingCount' && localStorage.getItem(key)) {
-  //       savedDrawings.push(
-  //         <div key={key} style={{ marginBottom: '10px' }}>
-  //           <button className="CanvasIconLoadButton" onClick={() => loadDrawing(key)}> Load - {key}</button>
-  //           <button className="CanvasIconDeleteButton" onClick={() => deleteDrawing(key)}> Delete - {key}</button>
-  //         </div>
-  //       );
-  //     }
-  //   }
-  //   return savedDrawings;
-  // };
-
   const handleEraserSizeChange = (e) => {
     setEraserSize(parseInt(e.target.value));
   };
