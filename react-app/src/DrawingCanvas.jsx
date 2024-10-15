@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 
 const DrawingCanvas = () => {
   const canvasRef = useRef(null);
-  const [isDrawing, setIsDrawing] = useState(false);
+  const [isDrawing, setIsDrawing] = useState(false); 
   const [tool, setTool] = useState('pencil');
   const [startCoords, setStartCoords] = useState({ x: 0, y: 0 });
   const [drawings, setDrawings] = useState([]);
@@ -13,6 +13,9 @@ const DrawingCanvas = () => {
   );
   const [eraserSize, setEraserSize] = useState(10);
   const [drawingName, setDrawingName] = useState('');
+  const [colorChosen, setColorChosen] = useState("black");
+  const [strokeWidth, setStrokeWidth] = useState(3); // Add stroke width state
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -47,8 +50,8 @@ const DrawingCanvas = () => {
       erase(endX, endY);
     } else if (tool === 'pencil') {
       const currentDrawing = drawings[drawings.length - 1];
-      ctx.strokeStyle = '#000';
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = colorChosen; // Use dynamic color
+      ctx.lineWidth = strokeWidth; // Use dynamic stroke width
       ctx.lineCap = 'round';
       ctx.beginPath();
       ctx.moveTo(currentDrawing.path[currentDrawing.path.length - 1].x, currentDrawing.path[currentDrawing.path.length - 1].y);
@@ -57,8 +60,8 @@ const DrawingCanvas = () => {
       currentDrawing.path.push({ x: endX, y: endY });
     } else if (tool === 'rectangle' || tool === 'circle') {
       redrawCanvas();
-      ctx.strokeStyle = '#000';
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = colorChosen; // Use dynamic color
+      ctx.lineWidth = strokeWidth; // Use dynamic stroke width
       if (tool === 'rectangle') {
         const width = endX - startCoords.x;
         const height = endY - startCoords.y;
@@ -78,7 +81,7 @@ const DrawingCanvas = () => {
     setIsDrawing(false);
 
     if (tool === 'rectangle' || tool === 'circle') {
-      const newDrawing = { tool, startX: startCoords.x, startY: startCoords.y, endX, endY };
+      const newDrawing = { tool, startX: startCoords.x, startY: startCoords.y, endX, endY, strokeWidth, colorChosen };
       setDrawings(prev => [...prev, newDrawing]);
     }
   };
@@ -100,10 +103,10 @@ const DrawingCanvas = () => {
   };
 
   const drawShape = (ctx, drawing) => {
-    const { tool, startX, startY, endX, endY, path } = drawing;
+    const { tool, startX, startY, endX, endY, path, colorChosen, strokeWidth } = drawing;
 
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = colorChosen; // Use dynamic color
+    ctx.lineWidth = strokeWidth; // Use dynamic stroke width
     ctx.lineCap = 'round';
 
     ctx.beginPath();
@@ -141,19 +144,27 @@ const DrawingCanvas = () => {
       return;
     }
   
-    const svgString = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"> <rect width="100%" height="100%" fill="#fff"/> ${drawings.map(drawing => {
-          if (drawing.tool === 'pencil') {
-            return `<path d="M${drawing.path.map(point => `${point.x},${point.y}`).join(' L')}" stroke="#000" fill="none" stroke-width="2"/>`;
-          }
-          return '';
-        }).join('')}
-      </svg>`;
+    const svgString = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600">
+      <rect width="100%" height="100%" fill="#fff"/>
+      ${drawings.map(drawing => {
+        if (drawing.tool === 'pencil') {
+          const pathData = drawing.path.map((point, index) => {
+            return index === 0 ? `M${point.x},${point.y}` : `L${point.x},${point.y}`;
+          }).join(' ');
+          return `<path d="${pathData}" stroke="${colorChosen}" fill="none" stroke-width="${strokeWidth}"/>`;
+        } else if (drawing.tool === 'rectangle') {
+          return `<rect x="${drawing.startX}" y="${drawing.startY}" width="${drawing.endX - drawing.startX}" height="${drawing.endY - drawing.startY}" stroke="${drawing.colorChosen}" fill="none" stroke-width="${drawing.strokeWidth}"/>`;
+        } else if (drawing.tool === 'circle') {
+          const radius = Math.sqrt((drawing.endX - drawing.startX) ** 2 + (drawing.endY - drawing.startY) ** 2);
+          return `<circle cx="${drawing.startX}" cy="${drawing.startY}" r="${radius}" stroke="${drawing.colorChosen}" fill="none" stroke-width="${drawing.strokeWidth}"/>`;
+        }
+        return '';
+      }).join('')}
+    </svg>`;
   
-    // Create a Blob from the SVG string
     const blob = new Blob([svgString], { type: 'image/svg+xml' });
     const url = URL.createObjectURL(blob);
   
-    // Create a link to download
     const a = document.createElement('a');
     a.href = url;
     a.download = `${drawingName}.svg`;
@@ -161,39 +172,23 @@ const DrawingCanvas = () => {
     a.click();
     document.body.removeChild(a);
   
-    // Save the URL to the state
     setDownloadedImages(prev => [...prev, url]);
-  
     setDrawingCount(drawingCount + 1);
     localStorage.setItem('drawingCount', drawingCount + 1);
-    setDrawingName(''); // Clear the input after saving
+    setDrawingName('');
   };
-
-  const loadDrawing = (key) => {
-    const dataURL = localStorage.getItem(key);
-    if (dataURL) {
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
-      const img = new Image();
-      img.onload = () => {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0);
-      };
-      img.src = dataURL;
-    }
-  };
-
-  const deleteDrawing = (key) => {
-    localStorage.removeItem(key);
-    console.log(`Deleted ${key} from localStorage`);
-
-    const newCount = drawingCount - 1;
-    setDrawingCount(newCount);
-    localStorage.setItem('drawingCount', newCount);
-  };
+  
 
   const handleEraserSizeChange = (e) => {
     setEraserSize(parseInt(e.target.value));
+  };
+
+  const handleColorChange = (e) => {
+    setColorChosen(e.target.value);
+  };
+
+  const handleStrokeWidthChange = (e) => {
+    setStrokeWidth(parseInt(e.target.value));
   };
 
   return (
@@ -218,6 +213,12 @@ const DrawingCanvas = () => {
         
         <button id="CanvasSaveButton" onClick={saveToCache}>Save Drawing</button>
         <button id="CanvasBackHomeButton" onClick={() => navigate('/')}>Back to Home</button>
+      </div>
+
+      <div>
+        <h2>Color & Stroke Width</h2>
+        <input type="color" value={colorChosen} onChange={handleColorChange} />
+        <input type="range" min="1" max="10" value={strokeWidth} onChange={handleStrokeWidthChange} />
       </div>
 
       <div className='shapes'>
