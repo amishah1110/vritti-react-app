@@ -5,13 +5,17 @@ import '../styles.css';
 const TopicDialog = ({ open, onClose, onSubmit, initialTopic = '', inputRef }) => {
   const [topic, setTopic] = useState(initialTopic);
   const [thresholds, setThresholds] = useState([0, 25, 50, 75, 100]);
+  const [colors, setColors] = useState(Array(thresholds.length - 1).fill(''));
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const colorOptions = ['Red', 'Green', 'Blue', 'Yellow', 'Purple'];
 
   useEffect(() => {
     if (open) {
       setTopic(initialTopic);
       setThresholds([0, 25, 50, 75, 100]);
+      setColors(Array(thresholds.length - 1).fill(''));
       setError('');
       setIsSubmitting(false);
       if (inputRef.current) {
@@ -24,6 +28,12 @@ const TopicDialog = ({ open, onClose, onSubmit, initialTopic = '', inputRef }) =
     const newThresholds = [...thresholds];
     newThresholds[index] = Number(value);
     setThresholds(newThresholds);
+  };
+
+  const handleColorChange = (index, value) => {
+    const newColors = [...colors];
+    newColors[index] = value;
+    setColors(newColors);
   };
 
   const validateInput = () => {
@@ -50,7 +60,7 @@ const TopicDialog = ({ open, onClose, onSubmit, initialTopic = '', inputRef }) =
 
     setIsSubmitting(true);
 
-    onSubmit(topic.trim(), thresholds);
+    onSubmit(topic.trim(), { thresholds, colors });
     mqttSub(topic.trim(), (receivedTopic, message) => {
       console.log(`Received message on topic ${receivedTopic}: ${message}`);
     });
@@ -60,9 +70,10 @@ const TopicDialog = ({ open, onClose, onSubmit, initialTopic = '', inputRef }) =
   };
 
   const handleClose = () => {
-    setTopic(initialTopic); // Reset topic when closing
-    setThresholds([0, 25, 50, 75, 100]); // Reset thresholds
-    setError(''); // Clear error message
+    setTopic(initialTopic);
+    setThresholds([0, 25, 50, 75, 100]);
+    setColors(Array(thresholds.length - 1).fill(''));
+    setError('');
     onClose();
   };
 
@@ -72,7 +83,7 @@ const TopicDialog = ({ open, onClose, onSubmit, initialTopic = '', inputRef }) =
     <div className="dialog-overlay">
       <div className="dialog-content">
         <h2>Configure Topic</h2>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="dialog-form">
           <input
             id="topic"
             type="text"
@@ -81,7 +92,7 @@ const TopicDialog = ({ open, onClose, onSubmit, initialTopic = '', inputRef }) =
             placeholder="Enter topic name"
             autoFocus
             ref={inputRef}
-            className="input-field" // This class will use your existing CSS
+            className="input-field"
           />
           {thresholds.map((threshold, index) => (
             <div key={index} className="threshold-input">
@@ -93,13 +104,28 @@ const TopicDialog = ({ open, onClose, onSubmit, initialTopic = '', inputRef }) =
                 onChange={(e) => handleThresholdChange(index, e.target.value)}
                 min="0"
                 step="0.01"
-                className="threshold-field" // Ensure this class is defined in your CSS
+                className="threshold-field"
               />
+              {index < thresholds.length - 1 && (
+                <>
+                  {/* <label>{`Color ${index}:`}</label> */}
+                  <select
+                    value={colors[index]}
+                    onChange={(e) => handleColorChange(index, e.target.value)}
+                    className="color-select"
+                  >
+                    <option value="">Select color</option>
+                    {colorOptions.map((color) => (
+                      <option key={color} value={color}>{color}</option>
+                    ))}
+                  </select>
+                </>
+              )}
             </div>
           ))}
-          {error && <div className="error-message" style={{ color: 'red', marginBottom: '10px' }}>{error}</div>}
-          <div className="dialog-buttons" style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <button type="submit" className="submitDialogButton" disabled={isSubmitting}>
+          {error && <div className="error-message">{error}</div>}
+          <div className="dialog-buttons">
+            <button type="submit" className="submitDialogButton" onClick={isSubmitting}>
               {isSubmitting ? 'Submitting...' : 'Subscribe'}
             </button>
             <button type="button" className="cancelDialogButton" onClick={handleClose}>

@@ -1,123 +1,29 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { mqttSub, mqttUnsub } from '../Subscribe';
 
-// Import your icon files
-import Icon1Grey from '../icons/bulb-grey.svg';
-import Icon1Red from '../icons/bulb-red.svg';
-import Icon1Blue from '../icons/bulb-blue.svg';
-import Icon1Yellow from '../icons/bulb-yellow.svg';
-import Icon1Green from '../icons/bulb-green.svg';
+// Define your SVG icons as React components
+const icons = [
+  ({ color }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" height="50px" viewBox="0 -960 960 960" width="50px" fill={color}>
+      <path d="M480-80q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80ZM320-200v-80h320v80H320Zm10-120q-69-41-109.5-110T180-580q0-125 87.5-212.5T480-880q125 0 212.5 87.5T780-580q0 81-40.5 150T630-320H330Zm24-80h252q45-32 69.5-79T700-580q0-92-64-156t-156-64q-92 0-156 64t-64 156q0 54 24.5 101t69.5 79Zm126 0Z"/>
+    </svg>
+  ),
 
-import Icon2Grey from '../icons/fan-grey.svg';
-import Icon2Red from '../icons/fan-red.svg';
-import Icon2Blue from '../icons/fan-blue.svg';
-import Icon2Green from '../icons/fan-green.svg';
-import Icon2Yellow from '../icons/fan-yellow.svg';
+  
+  // Add other icons here...
+];
 
-import Icon3Grey from '../icons/gas-meter-grey.svg';
-import Icon3Red from '../icons/gas-meter-red.svg';
-import Icon3Blue from '../icons/gas-meter-blue.svg';
-import Icon3Green from '../icons/gas-meter-green.svg';
-import Icon3Yellow from '../icons/gas-meter-yellow.svg';
-
-import Icon4Grey from '../icons/heat-grey.svg';
-import Icon4Red from '../icons/heat-red.svg';
-import Icon4Blue from '../icons/heat-blue.svg';
-import Icon4Green from '../icons/heat-green.svg';
-import Icon4Yellow from '../icons/heat-yellow.svg';
-
-import Icon5Grey from '../icons/memory-grey.svg';
-import Icon5Red from '../icons/memory-red.svg';
-import Icon5Blue from '../icons/memory-blue.svg';
-import Icon5Green from '../icons/memory-green.svg';
-import Icon5Yellow from '../icons/memory-yellow.svg';
-
-import Icon6Grey from '../icons/oil-barrel-grey.svg';
-import Icon6Red from '../icons/oil-barrel-red.svg';
-import Icon6Blue from '../icons/oil-barrel-blue.svg';
-import Icon6Green from '../icons/oil-barrel-green.svg';
-import Icon6Yellow from '../icons/oil-barrel-yellow.svg';
-
-import Icon7Grey from '../icons/power-settings-grey.svg';
-import Icon7Red from '../icons/power-settings-red.svg';
-import Icon7Blue from '../icons/power-settings-blue.svg';
-import Icon7Green from '../icons/power-settings-green.svg';
-import Icon7Yellow from '../icons/power-settings-yellow.svg';
-
-import Icon8Grey from '../icons/propane-tank-grey.svg';
-import Icon8Red from '../icons/propane-tank-red.svg';
-import Icon8Blue from '../icons/propane-tank-blue.svg';
-import Icon8Green from '../icons/propane-tank-green.svg';
-import Icon8Yellow from '../icons/propane-tank-yellow.svg';
-
-import Icon9Grey from '../icons/thermostat-grey.svg';
-import Icon9Red from '../icons/thermostat-red.svg';
-import Icon9Blue from '../icons/thermostat-blue.svg';
-import Icon9Green from '../icons/thermostat-green.svg';
-import Icon9Yellow from '../icons/thermostat-yellow.svg';
-
-import Icon10Grey from '../icons/timer-grey.svg';
-import Icon10Red from '../icons/timer-red.svg';
-import Icon10Blue from '../icons/timer-blue.svg';
-import Icon10Green from '../icons/timer-green.svg';
-import Icon10Yellow from '../icons/timer-yellow.svg';
-
-import Icon11Grey from '../icons/valve-grey.svg';
-import Icon11Red from '../icons/valve-red.svg';
-import Icon11Blue from '../icons/valve-blue.svg';
-import Icon11Green from '../icons/valve-green.svg';
-import Icon11Yellow from '../icons/valve-yellow.svg';
-
-import Icon12Grey from '../icons/water-drop-grey.svg';
-import Icon12Red from '../icons/water-drop-red.svg';
-import Icon12Blue from '../icons/water-drop-blue.svg';
-import Icon12Green from '../icons/water-drop-green.svg';
-import Icon12Yellow from '../icons/water-drop-yellow.svg';
-
-import Icon13Grey from '../icons/wifi-grey.svg';
-import Icon13Red from '../icons/wifi-red.svg';
-import Icon13Blue from '../icons/wifi-blue.svg';
-import Icon13Green from '../icons/wifi-green.svg';
-import Icon13Yellow from '../icons/wifi-yellow.svg';
-
-//mapping iconKeys to respective icon states
-export const iconMapping = {
-  'icon1': { grey: Icon1Grey, red: Icon1Red, blue: Icon1Blue, green: Icon1Green, yellow: Icon1Yellow },
-  'icon2': { grey: Icon2Grey, red: Icon2Red, blue: Icon2Blue, green: Icon2Green, yellow: Icon2Yellow },
-  'icon3': { grey: Icon3Grey, red: Icon3Red, blue: Icon3Blue, green: Icon3Green, yellow: Icon3Yellow },
-  'icon4': { grey: Icon4Grey, red: Icon4Red, blue: Icon4Blue, green: Icon4Green, yellow: Icon4Yellow },
-  'icon5': { grey: Icon5Grey, red: Icon5Red, blue: Icon5Blue, green: Icon5Green, yellow: Icon5Yellow },
-  'icon6': { grey: Icon6Grey, red: Icon6Red, blue: Icon6Blue, green: Icon6Green, yellow: Icon6Yellow },
-  'icon7': { grey: Icon7Grey, red: Icon7Red, blue: Icon7Blue, green: Icon7Green, yellow: Icon7Yellow },
-  'icon8': { grey: Icon8Grey, red: Icon8Red, blue: Icon8Blue, green: Icon8Green, yellow: Icon8Yellow },
-  'icon9': { grey: Icon9Grey, red: Icon9Red, blue: Icon9Blue, green: Icon9Green, yellow: Icon9Yellow },
-  'icon10': { grey: Icon10Grey, red: Icon10Red, blue: Icon10Blue, green: Icon10Green, yellow: Icon10Yellow },
-  'icon11': { grey: Icon11Grey, red: Icon11Red, blue: Icon11Blue, green: Icon11Green, yellow: Icon11Yellow },
-  'icon12': { grey: Icon12Grey, red: Icon12Red, blue: Icon12Blue, green: Icon12Green, yellow: Icon12Yellow },
-  'icon13': { grey: Icon13Grey, red: Icon13Red, blue: Icon13Blue, green: Icon13Green, yellow: Icon13Yellow },
-};
-
-
-const IconComponent = ({ id, latestValue, position, onPositionChange, iconKey, topic = '', thresholds = [0, 15, 50, 75, 100], handleIconSelect, handleUnsubscribe,}) => {
-  const [icon, setIcon] = useState(iconMapping[iconKey.split('-')[0]]?.grey); // Adjusted to extract base iconKey
+const IconComponent = ({ id, latestValue, position, onPositionChange, iconKey, topic = '', thresholds = [0, 15, 50, 75, 100], handleIconSelect, handleUnsubscribe, colors }) => {
+  const [iconColor, setIconColor] = useState('#5f6368'); 
   const [isEditing, setIsEditing] = useState(false);
   const [currentTopic, setCurrentTopic] = useState(topic);
   const [message, setMessage] = useState('No Data');
   const previousTopic = useRef(topic);
   const [isBlinking, setIsBlinking] = useState(false);
   const isSubscribed = useRef(true);
+  const [currentIconIndex, setCurrentIconIndex] = useState(0); // Track the index of the current icon
 
-  // Update icon when the iconKey changes
-  useEffect(() => {
-    if (iconMapping[iconKey.split('-')[0]]) {
-      setIcon(iconMapping[iconKey.split('-')[0]].grey);
-    } else {
-      console.error(`No icon mapping found for: ${iconKey}`);
-      setIcon(iconMapping['icon1'].grey);
-    }
-  }, [iconKey]);
-
-   // Update icon color based on latest value
+  // Update icon color when latestValue changes
   useEffect(() => {
     if (latestValue !== undefined) {
       const numericValue = typeof latestValue === 'number' ? latestValue : parseFloat(latestValue);
@@ -127,165 +33,86 @@ const IconComponent = ({ id, latestValue, position, onPositionChange, iconKey, t
     }
   }, [latestValue]);
 
-  //update current topic when edited
-  useEffect(() => {
-    if (topic !== previousTopic.current) {
-      setCurrentTopic(topic || '');
-      previousTopic.current = topic;
-    }
-  }, [topic]);
-
-  //update icon color based on value and threshold defined
   const updateIconColor = (value) => {
-    if (!iconMapping[iconKey.split('-')[0]]) {
-      console.error(`Icon mapping for iconKey "${iconKey}" not found.`);
-      return;
-    }
-
-    if (!Array.isArray(thresholds) || thresholds.length < 5) {
-      console.error('Invalid thresholds:', thresholds);
-      return;
-    }
-
-    let newIcon;
+    let newColor;
     if (value < thresholds[0]) {
-      newIcon = iconMapping[iconKey.split('-')[0]]?.grey;
+      newColor = colors[0] || '#5f6368'; 
     } else if (value < thresholds[1]) {
-      newIcon = iconMapping[iconKey.split('-')[0]]?.blue;
+      newColor = colors[1] || '#007bff'; // Use user-defined color or default
     } else if (value < thresholds[2]) {
-      newIcon = iconMapping[iconKey.split('-')[0]]?.green;
+      newColor = colors[2] || '#28a745'; // Use user-defined color or default
     } else if (value < thresholds[3]) {
-      newIcon = iconMapping[iconKey.split('-')[0]]?.yellow;
+      newColor = colors[3] || '#ffc107'; // Use user-defined color or default
     } else if (value <= thresholds[4]) {
-      newIcon = iconMapping[iconKey.split('-')[0]]?.red;
+      newColor = colors[4] || '#dc3545'; // Use user-defined color or default
     } else {
       console.error('Value out of range:', value);
-      newIcon = iconMapping[iconKey.split('-')[0]]?.grey;
-      triggerBlinking();
+      newColor = '#5f6368'; // grey
       return;
     }
-    setIsBlinking(false);
-    setIcon(newIcon);
-    checkThresholds(value);
+    setIconColor(newColor);
   };
 
-  const checkThresholds = (value) => {
-    //console.log("going inside checkThresholds method")
-    const [t1, t5] = thresholds;
-    if (value < t1 || value > t5) {
-      setIsBlinking(true); 
-      setTimeout(() => { setIsBlinking(false); }, 1000); 
-    }
-    else {
-      setIsBlinking(false); //no blinking reqd as value within range
-    }
+  // Function to handle color selection
+  const handleColorChange = (event) => {
+    setIconColor(event.target.value); // Update icon color based on user selection
   };
 
-  const triggerBlinking = () => {
-    setIsBlinking(true);
-    setIcon(iconMapping[iconKey.split('-')[0]]?.grey);
-    setTimeout(() => {
-        setIsBlinking(false);
-    }, 10000); // Duration of blinking effect
-  };
-
-
-  const handleTopicChangeInput = (e) => {
-    setCurrentTopic(e.target.value);
-  };
-
-  //submission of new topic
-  const handleSubmit = (e) => {
-    const newTopic = document.getElementById("topic-input").value.trim();
-    
-    if (newTopic !== "") {
-      if (isSubscribed.current) {
-        mqttUnsub(previousTopic.current);  // Unsubscribe from the previous topic
-      }
-
-      previousTopic.current = newTopic; // Store the new topic in previousTopic
-      
-      // Create a unique subscription ID based on the icon's unique key
-      const uniqueSubscriptionId = `${iconKey}-${newTopic}`; 
-      
-      // Subscribe to the new topic
-      mqttSub(newTopic, (receivedTopic, message) => {
-        console.log(`Received message: ${message} on topic: ${receivedTopic}`);
-        
-        // Check if the received message corresponds to this icon's topic
-        if (receivedTopic === newTopic) {
-          const value = parseFloat(message); // Convert the message to a numeric value
-          setMessage(message + "");
-          
-          // Update the icon color based on the received message
-          updateIconColor(value); 
-        }
-      });
-
-      isSubscribed.current = true;  // Mark this icon as subscribed
-      setIsEditing(false);  // Exit editing mode
-    }
-  };
-
-
-  //cancellation of topic editing
-  const handleCancel = () => {
-    setCurrentTopic(previousTopic.current);
-    setIsEditing(false);
-  };
-
-  const handleUnsubscribeClick = () => {
-    mqttUnsub(previousTopic.current);
-    handleUnsubscribe(id);
-    setMessage('No Data');
-    previousTopic.current = '';
-    setCurrentTopic('');
-    isSubscribed.current = false;
-    setIsEditing(false);
-  };
-
-  const handleDrag = (event) => {
-    const newPosition = { x: event.clientX - 25, y: event.clientY - 25 };
-    onPositionChange(event.target.id, newPosition);
-  };
-  //start of drag event
   const handleDragStart = (event) => {
-    event.dataTransfer.setData('application/json', JSON.stringify({ iconKey, topic, id: event.target.id }));
+    event.dataTransfer.setData('text/plain', id); // Store the ID of the dragged item
   };
 
-  //end f drag event
-  const handleDragEnd = (event) => {
-    event.preventDefault();
+  const handleDragOver = (event) => {
+    event.preventDefault(); // Allow drop
+  };
+
+  const handleDrop = (event) => {
+    const draggedId = event.dataTransfer.getData('text/plain'); // Get the ID of the dragged item
+    if (draggedId !== id) {
+      onPositionChange(draggedId, position); // Handle the drop logic here
+    }
   };
 
   return (
-    <div style={{ position: 'absolute', left: position.x, top: position.y, cursor: 'move', zIndex: 1, textAlign: 'center',}}
-      onClick={handleIconSelect}
+    <div 
+      style={{ position: 'absolute', left: position.x, top: position.y, cursor: 'move', zIndex: 1, textAlign: 'center' }} 
       id={id} 
       draggable
       onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+      onClick={handleIconSelect}
       onDoubleClick={() => setIsEditing(true)}
-      onDrag={handleDrag} 
-      onDragEnd={handleDragEnd} 
     >
-      <img src={icon} alt="Icon" style={{  width: '50px', height: '50px', cursor: 'pointer' }} className={isBlinking ? 'blink-animation' : ''} title={`Topic: ${previousTopic.current}`} />
-
+      {/* Render the current icon based on currentIconIndex */}
+      {icons[currentIconIndex]({ color: iconColor })}
       <p style={{ margin: '5px 0 0 0', fontSize: '18px', color: '#333', position: 'relative' }}>{latestValue}</p>
+
+      {/* Dropdown for color selection */}
+      {/* <div style={{ marginTop: '10px' }}>
+        <label htmlFor="colorSelect">Select Icon Color: </label>
+        <select id="colorSelect" onChange={handleColorChange} value={iconColor}>
+          <option value="#5f6368">Grey</option>
+          <option value="#007bff">Blue</option>
+          <option value="#28a745">Green</option>
+          <option value="#ffc107">Yellow</option>
+          <option value="#dc3545">Red</option>
+        </select>
+      </div> */}
 
       {isEditing && (
         <div style={{ marginTop: '10px', textAlign: 'center' }}>
           <input
-            id='topic-input'
             type="text"
             value={currentTopic}
-            onChange={handleTopicChangeInput}
+            onChange={(e) => setCurrentTopic(e.target.value)}
             placeholder="Enter topic name"
             style={{ padding: '5px', marginBottom: '5px', width: '150px', border: '1px solid #ccc', borderRadius: '4px' }}
             autoFocus
           />
-          <button onClick={handleSubmit} style={{ margin: '5px', padding: '5px 10px', border: 'none', backgroundColor: '#007bff', color: 'white', borderRadius: '4px', cursor: 'pointer' }}>Submit</button>
-          <button onClick={handleCancel} style={{ margin: '5px', padding: '5px 10px', border: 'none', backgroundColor: '#6c757d', color: 'white', borderRadius: '4px', cursor: 'pointer' }}>Cancel</button>
-          <button onClick={handleUnsubscribeClick} style={{ margin: '5px', padding: '5px 10px', border: 'none', backgroundColor: '#dc3545', color: 'white', borderRadius: '4px', cursor: 'pointer' }}> Unsubscribe</button>
+          <button onClick={() => { handleSubmit(currentTopic); setIsEditing(false); }}>Submit</button>
+          <button onClick={() => setIsEditing(false)}>Cancel</button>
+          <button onClick={handleUnsubscribe}>Unsubscribe</button>
         </div>
       )}
     </div>
@@ -293,3 +120,27 @@ const IconComponent = ({ id, latestValue, position, onPositionChange, iconKey, t
 };
 
 export default IconComponent;
+
+
+export const updateIconColor = (value) => {
+  let newIcon;
+  if (value < thresholds[0]) {
+    newIcon = '#5f6368'; // grey
+  } else if (value < thresholds[1]) {
+    newIcon = '#007bff'; // blue
+  } else if (value < thresholds[2]) {
+    newIcon = '#28a745'; // green
+  } else if (value < thresholds[3]) {
+    newIcon = '#ffc107'; // yellow
+  } else if (value <= thresholds[4]) {
+    newIcon = '#dc3545'; // red
+  } else {
+    console.error('Value out of range:', value);
+    newIcon = '#5f6368'; // grey
+    triggerBlinking();
+    return;
+  }
+  setIsBlinking(false);
+  setIcon(newIcon);
+  checkThresholds(value);
+};
