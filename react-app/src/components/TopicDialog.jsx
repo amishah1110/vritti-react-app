@@ -2,20 +2,25 @@ import React, { useState, useEffect } from 'react';
 import { mqttSub } from '../Subscribe';
 import '../styles.css';
 
+export let updatedThresholds = []; // Array to store user-defined thresholds
+export let updatedColors = []; // Array to store user-defined colors
+
 const TopicDialog = ({ open, onClose, onSubmit, initialTopic = '', inputRef }) => {
+  const defaultColors = ['red', 'green','blue','yellow','orange','purple'];
+
+  const defaultThresholds = [10, 20, 30, 40, 50];
+
   const [topic, setTopic] = useState(initialTopic);
-  const [thresholds, setThresholds] = useState([0, 25, 50, 75, 100]);
-  const [colors, setColors] = useState(Array(thresholds.length - 1).fill(''));
+  const [colorSelections, setColorSelections] = useState(Array(defaultThresholds.length - 1).fill(''));
+  const [thresholds, setThresholds] = useState([...defaultThresholds]);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const colorOptions = ['Red', 'Green', 'Blue', 'Yellow', 'Purple'];
 
   useEffect(() => {
     if (open) {
       setTopic(initialTopic);
-      setThresholds([0, 25, 50, 75, 100]);
-      setColors(Array(thresholds.length - 1).fill(''));
+      setColorSelections(Array(defaultThresholds.length - 1).fill(''));
+      setThresholds([...defaultThresholds]);
       setError('');
       setIsSubmitting(false);
       if (inputRef.current) {
@@ -31,9 +36,9 @@ const TopicDialog = ({ open, onClose, onSubmit, initialTopic = '', inputRef }) =
   };
 
   const handleColorChange = (index, value) => {
-    const newColors = [...colors];
+    const newColors = [...colorSelections];
     newColors[index] = value;
-    setColors(newColors);
+    setColorSelections(newColors);
   };
 
   const validateInput = () => {
@@ -53,14 +58,18 @@ const TopicDialog = ({ open, onClose, onSubmit, initialTopic = '', inputRef }) =
     return true;
   };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     if (!validateInput() || isSubmitting) return;
-
     setIsSubmitting(true);
 
-    onSubmit(topic.trim(), { thresholds, colors });
+    // Copy user-defined thresholds and colors to the updated arrays
+    updatedThresholds.length = 0; // Clear previous values
+    updatedColors.length = 0; // Clear previous values
+    updatedThresholds.push(...thresholds);
+    updatedColors.push(...colorSelections);
+
+    onSubmit(topic.trim(), { thresholds, colors: colorSelections });
     mqttSub(topic.trim(), (receivedTopic, message) => {
       console.log(`Received message on topic ${receivedTopic}: ${message}`);
     });
@@ -71,8 +80,8 @@ const TopicDialog = ({ open, onClose, onSubmit, initialTopic = '', inputRef }) =
 
   const handleClose = () => {
     setTopic(initialTopic);
-    setThresholds([0, 25, 50, 75, 100]);
-    setColors(Array(thresholds.length - 1).fill(''));
+    setColorSelections(Array(defaultThresholds.length - 1).fill(''));
+    setThresholds([...defaultThresholds]);
     setError('');
     onClose();
   };
@@ -107,25 +116,22 @@ const TopicDialog = ({ open, onClose, onSubmit, initialTopic = '', inputRef }) =
                 className="threshold-field"
               />
               {index < thresholds.length - 1 && (
-                <>
-                  {/* <label>{`Color ${index}:`}</label> */}
-                  <select
-                    value={colors[index]}
-                    onChange={(e) => handleColorChange(index, e.target.value)}
-                    className="color-select"
-                  >
-                    <option value="">Select color</option>
-                    {colorOptions.map((color) => (
-                      <option key={color} value={color}>{color}</option>
-                    ))}
-                  </select>
-                </>
+                <select
+                  value={colorSelections[index]}
+                  onChange={(e) => handleColorChange(index, e.target.value)}
+                  className="color-select"
+                >
+                  <option value="">Select color</option>
+                  {defaultColors.map((color) => (
+                    <option key={color} value={color}>{color}</option>
+                  ))}
+                </select>
               )}
             </div>
           ))}
           {error && <div className="error-message">{error}</div>}
           <div className="dialog-buttons">
-            <button type="submit" className="submitDialogButton" onClick={isSubmitting}>
+            <button type="submit" className="submitDialogButton">
               {isSubmitting ? 'Submitting...' : 'Subscribe'}
             </button>
             <button type="button" className="cancelDialogButton" onClick={handleClose}>
