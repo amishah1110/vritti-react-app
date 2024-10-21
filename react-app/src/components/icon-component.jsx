@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { mqttSub, mqttUnsub } from '../Subscribe';
-import { updatedThresholds, updatedColors } from './TopicDialog'; // Adjust the path as needed
+import { updatedThresholds, updatedColors } from './TopicDialog';
 
 const iconSet = {
   bulb: ({ color }) => (
@@ -83,27 +83,51 @@ const iconSet = {
   
 };
 
-export var colors = new Array(5); // Blue, Green, Red, Yellow, Purple
-export var thresholds = new Array(5) ;
-
-const IconComponent = ({ id, latestValue, position, onPositionChange, iconKey, topic = '', handleIconSelect, handleUnsubscribe}) => {
+const IconComponent = React.memo(({ id, latestValue, position, hoverText,onPositionChange, iconKey, topic = "", handleIconSelect, handleUnsubscribe, setDroppedIcons}) => {
+  debugger
   const [iconColor, setIconColor] = useState('#5f6368'); 
   const [isEditing, setIsEditing] = useState(false);
   const [currentTopic, setCurrentTopic] = useState(topic);
   const previousTopic = useRef(topic);
   const [isBlinking, setIsBlinking] = useState(false);
   const isSubscribed = useRef(true);
+  
 
   useEffect(() => {
-    if (latestValue !==undefined) {
-      const numericValue = typeof latestValue === 'number' ? latestValue : parseFloat(latestValue);
-      console.log('Numeric Value:', numericValue); // Check the parsed value
-      console.log('Type of Parsed Value:', typeof numericValue); // Check the type
-      if (!isNaN(numericValue)) {
-        updateIconColor(numericValue);
-      }
+    if (latestValue !== undefined) {
+        const numericValue = typeof latestValue === 'number' ? latestValue : parseFloat(latestValue);
+        if (!isNaN(numericValue)) {
+            updateIconColor(numericValue);
+        } else {
+            console.error('Received value is not a number:', latestValue);
+        }
     }
+    return () => {
+      //debugger
+       // mqttUnsub(previousTopic.current); // Cleanup on unmount
+    };
   }, [latestValue]);
+
+  useEffect(() => {
+    if (typeof currentTopic == String && currentTopic !== previousTopic.current) {
+      mqttSub(currentTopic, (receivedTopic, message) => {
+        const value = parseFloat(message);
+        console.log(`Received message on topic ${receivedTopic}: ${value}`);
+        setDroppedIcons((prev) => 
+          prev.map((icon) => icon.topic === receivedTopic ? { ...icon, latestValue: value } : icon)
+        );
+      });
+  
+      // Unsubscribe from the previous topic
+      if (previousTopic.current) {
+        debugger
+        mqttUnsub(previousTopic.current);
+      }
+  
+      // Update the previous topic ref
+      previousTopic.current = currentTopic;
+    }
+  }, [currentTopic]);
 
   const updateIconColor = (latestValue) => {
     let newColor = '#5f6368'; // Default color
@@ -135,90 +159,166 @@ const IconComponent = ({ id, latestValue, position, onPositionChange, iconKey, t
     setIconColor(newColor);
 };
 
-
-  const handleDragStart = (event) => {
-    event.dataTransfer.setData('text/plain', id); // Store the ID of the dragged item
-  };
-
-  const handleDragOver = (event) => {
-    event.preventDefault(); // Allow drop
-  };
-
-  const handleDrop = (event) => {
-    const draggedId = event.dataTransfer.getData('text/plain'); // Get the ID of the dragged item
-    if (draggedId !== id) {
-      onPositionChange(draggedId, position); // Handle the drop logic here
-    }
-  };
-
-  const handleSubmit = (newTopic) => {
-    
-  };
-//   const thresholdArray = Array.isArray(thresholds) ? thresholds : Object.values(thresholds);
-    
-// console.log(JSON.stringify(thresholdArray));
-//   const ColorMapper = ({ value }) => {
-//     const color = mapValueToColor(value);
-  
-//     return (
-//       <div style={{ color }}>
-//         The color for value {value} is: {color}
-//       </div>
-//     );
-//   };
-
-//   const mapValueToColor = (value) => {
-//     const [range, colors] = thresholdArray;
-//     for (let i = 0; i < range.length - 1; i++) {
-//       if (value >= range[i] && value < range[i + 1]) {
-//         console.log(colors[i]);
-//         return colors[i];
-        
-//       }
-//     }
-//     return null; // Return null if value is out of range
-//   };  
-
-  const CurrentIcon = iconSet[iconKey] || iconSet.bulb;
-
-  return (
-    <div 
-      style={{ position: 'absolute', left: position.x, top: position.y, cursor: 'move', zIndex: 1, textAlign: 'center' }} 
-      id={id} 
-      draggable
-      onDragStart={handleDragStart}
-      onDragOver={handleDragOver}
-      onDrop={handleDrop}
-      onClick={handleIconSelect}
-      onDoubleClick={() => setIsEditing(true)}
-    >
-      <CurrentIcon color={iconColor} />
-      <p style={{ margin: '5px 0 0 0', fontSize: '18px', color: '#333', position: 'relative' }}>{latestValue}</p>
-      {isEditing && (
-        <div style={{ marginTop: '10px', textAlign: 'center' }}>
-          <input
-            type="text"
-            value={currentTopic}
-            onChange={(e) => setCurrentTopic(e.target.value)}
-            placeholder="Enter topic name"
-            style={{ padding: '5px', marginBottom: '5px', width: '150px', border: '1px solid #ccc', borderRadius: '4px' }}
-            autoFocus
-          />
-          <button id="edit-topic-submit" onClick={() => { handleSubmit(currentTopic); setIsEditing(false); }}>Submit</button>
-          <button id="edit-topic-cancel" onClick={() => setIsEditing(false)}> Cancel </button>
-          <button id="unsubscribeButton" onClick={handleUnsubscribe}> Unsubscribe </button>
-        </div>
-      )}
-
-{/* <div>
-      <ColorMapper value={10} />
-      <ColorMapper value={30} />
-      <ColorMapper value={55} />
-      <ColorMapper value={80} />
-    </div> */}
-    </div>
-    
-  );
+const handleTopicChangeInput = (e) => {  
+  setCurrentTopic(e.target.value);
 };
+/////////////////////////////////////////////////
+// const handleSubscribe = () => {
+//   if (currentTopic && currentTopic !== previousTopic.current) {
+      
+//     mqttUnsub(previousTopic.current);  
+//       console.log(`Subscribing to new topic: ${currentTopic}`);
+//       mqttSub(currentTopic, (receivedTopic, message) => {
+//         const value = parseFloat(message);
+//         console.log(`Received message on topic ${receivedTopic}: ${value}`);
+//         setDroppedIcons((prev) =>prev.map((icon) => icon.topic === receivedTopic ? { ...icon, latestValue: value } : icon));
+//       });
+
+//       // Update the icon's topic
+//       setDroppedIcons((prev) => prev.map((icon) => icon.id === id ? { ...icon, topic: currentTopic } : icon));
+
+//       // Update the previous topic ref
+//       previousTopic.current = currentTopic;
+//       setIsEditing(false);
+    
+//   } else {
+//     console.log('No topic provided for subscription.');
+//     setIsEditing(false);
+//   }
+// };
+/////////////////////////////////////////////////////////////////
+// const handleSubscribe = () => {
+//   if (currentTopic && currentTopic !== previousTopic.current) {
+//     setDroppedIcons((prev) => prev.map((icon) => icon.id === id ? { ...icon, topic: currentTopic } : icon));
+//     setIsEditing(false);
+//   } 
+//   else {
+//     console.log('No topic provided for subscription.');
+//     setIsEditing(false);
+//   }
+// };
+
+// const handleSubmit = () => {
+//   if (currentTopic.trim()) {
+//     mqttUnsub(previousTopic.current);
+//     previousTopic.current = currentTopic;
+//     mqttSub(currentTopic, (receivedTopic, message) => {
+//       if (receivedTopic === currentTopic) {
+//         const value = parseFloat(message);
+//         if (!isNaN(value)) {
+//           updateIconColor(value);
+//           setDroppedIcons((prev) => prev.map((icon) => icon.id===id?{...icon, latestValue:value, topic: currentTopic}: icon));
+//         } else {
+//           console.error(`Invalid message value: ${message}`);
+//         }
+//       }
+//     });
+//     isSubscribed.current = true;
+//     setIsEditing(false);
+//   } else {
+//     alert('Please enter a valid topic name.');
+//   }
+// };
+
+const handleSubmit = () => {
+  if (currentTopic.trim()) {
+    if (currentTopic !== previousTopic.current) {
+      // Only unsubscribe if the topic has changed
+      if (previousTopic.current) {
+        debugger
+        mqttUnsub(previousTopic.current);
+      }
+      
+      // Subscribe to the new topic
+      mqttSub(currentTopic, (receivedTopic, message) => {
+        if (receivedTopic === currentTopic) {
+          const value = parseFloat(message);
+          if (!isNaN(value)) {
+            updateIconColor(value);
+            setDroppedIcons((prev) => prev.map((icon) => 
+              icon.id === id ? {...icon, latestValue: value, topic: currentTopic} : icon
+            ));
+          } else {
+            console.error(`Invalid message value: ${message}`);
+          }
+        }
+      });
+      
+      // Update the previous topic ref
+      previousTopic.current = currentTopic;
+    }
+    
+    isSubscribed.current = true;
+    setIsEditing(false);
+  } else {
+    alert('Please enter a valid topic name.');
+  }
+};
+
+
+const handleCancel = () => {
+  setCurrentTopic(previousTopic.current);
+  setIsEditing(false);
+};
+
+const handleUnsubscribeClick = () => {
+  console.log(`Unsubscribing from topic: ${previousTopic.current}`);
+  debugger
+  mqttUnsub(previousTopic.current);
+  handleUnsubscribe(id);
+  setCurrentTopic('');
+  previousTopic.current = '';
+  isSubscribed.current = false;
+  setIsEditing(false);
+};
+
+
+const handleDrag = (event) => {
+  const newPosition = { x: event.clientX - 25, y: event.clientY - 25 };
+  onPositionChange(iconKey, newPosition);
+};
+
+const handleDragStart = (event) => {
+  event.dataTransfer.setData('application/json', JSON.stringify({ iconKey, topic }));
+};
+
+const handleDragEnd = (event) => {
+  event.preventDefault();
+};
+const CurrentIcon = iconSet[iconKey] || iconSet.bulb;
+
+
+return (
+  <div 
+    style={{ position: 'absolute', left: position.x, top: position.y, cursor: 'move', zIndex: 1, textAlign: 'center' }} 
+    id={id} 
+    draggable
+    onDragStart={handleDragStart}
+    onDrag={handleDrag}
+    onDragEnd={handleDragEnd}
+    onClick={handleIconSelect}
+    onDoubleClick={() => setIsEditing(true)}
+  >
+    <CurrentIcon color={iconColor} />
+    <p style={{ margin: '5px 0 0 0', fontSize: '18px', color: '#333', position: 'relative' }}>{latestValue}</p>
+    {isEditing && (
+      <div style={{ marginTop: '10px', textAlign: 'center' }}>
+        <input
+          type="text"
+          value={currentTopic}
+          onChange={handleTopicChangeInput}
+          placeholder="Enter topic name"
+          style={{ padding: '5px', marginBottom: '5px', width: '150px', border: '1px solid #ccc', borderRadius: '4px' }}
+          autoFocus
+        />
+        <button id="edit-topic-submit" onClick={handleSubmit}>Submit</button>
+        <button id="edit-topic-cancel" onClick={handleCancel}> Cancel </button>
+        <button id="edit-topic-unsubscribe" onClick={handleUnsubscribeClick}> Unsubscribe </button>
+
+      </div>
+    )}
+  </div>
+);
+});
 
 export default IconComponent;

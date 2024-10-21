@@ -34,6 +34,7 @@ function App() {
   };
 
   const handleSubscribe = () => {
+    
     if (newTopic && !subscribedTopics.includes(newTopic)) {
       mqttSub(newTopic, (receivedTopic, message) => {
         const value = parseFloat(message);
@@ -247,7 +248,7 @@ function App() {
 
       <div
         id='drop-box' //for dropbox fxning
-        style={{ width: 600, height: 250 }}
+        style={{ width: 700, height: 300 }}
         className="dropbox"
         onDrop={handleDrop}
         onDragOver={(event) => event.preventDefault()}
@@ -262,8 +263,8 @@ function App() {
           position={icon.position} 
           iconKey={icon.iconKey} 
           thresholds={icon.thresholds || [0, 15, 50, 75, 100]} // Default thresholds if not provided
-    colors={icon.colors || ['Red', 'Green', 'Blue', 'Yellow', 'Purple']} // Default colors if not provided
-    handleUnsubscribe={handleUnsubscribe}
+          colors={icon.colors || ['Red', 'Green', 'Blue', 'Yellow', 'Purple']} // Default colors if not provided
+          handleUnsubscribe={handleUnsubscribe}
           onPositionChange={handlePositionChange} 
           setDroppedIcons={setDroppedIcons} 
           handleEdit={openEditDialog} 

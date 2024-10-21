@@ -56,7 +56,6 @@ export const initializeClient = () => {
 // Subscribe to a topic
 export const mqttSub = (topic, callback) => {
     const client = initializeClient();
-
     if (client) {
         if (!subscriptions.has(topic)) {
             subscriptions.add(topic);
@@ -77,6 +76,7 @@ export const mqttSub = (topic, callback) => {
     } else {
         console.error('MQTT client not initialized');
     }
+
 };
 
 // Unsubscribe from a topic

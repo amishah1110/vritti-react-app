@@ -27,7 +27,7 @@ const DropBox = ({ onDropIcon }) => {
       );
     } else {
       // Add new icon
-      const newIcon = { ...draggedIcon, position, topic: '' };
+      const newIcon = { ...draggedIcon, position, topic: ''};
       setIcons((prev) => prev.concat(newIcon));
       setCurrentIcon(newIcon);
       setCurrentPosition(position);
