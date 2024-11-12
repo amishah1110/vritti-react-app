@@ -119,12 +119,9 @@ const TopicDialog = ({ open, onClose, onSubmit, initialTopic = '', inputRef }) =
                 <select
                   value={colorSelections[index]}
                   onChange={(e) => handleColorChange(index, e.target.value)}
-                  className="color-select"
-                >
+                  className="color-select">
                   <option value="">Select color</option>
-                  {defaultColors.map((color) => (
-                    <option key={color} value={color}>{color}</option>
-                  ))}
+                  {defaultColors.map((color) => (<option key={color} value={color}>{color}</option>))}
                 </select>
               )}
             </div>

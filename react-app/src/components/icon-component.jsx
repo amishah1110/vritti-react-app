@@ -33,7 +33,7 @@ const iconSet = {
     </svg>
   ),
 
-  oilbarrel: ({color, latestValue}) => (
+  oilbarrel: ({color}) => (
     <svg className="icon" id="icon6" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#5f6368">
       <path d="M160-120q-17 0-28.5-11.5T120-160q0-17 11.5-28.5T160-200h40v-240h-40q-17 0-28.5-11.5T120-480q0-17 11.5-28.5T160-520h40v-240h-40q-17 0-28.5-11.5T120-800q0-17 11.5-28.5T160-840h640q17 0 28.5 11.5T840-800q0 17-11.5 28.5T800-760h-40v240h40q17 0 28.5 11.5T840-480q0 17-11.5 28.5T800-440h-40v240h40q17 0 28.5 11.5T840-160q0 17-11.5 28.5T800-120H160Zm120-80h400v-240q-17 0-28.5-11.5T640-480q0-17 11.5-28.5T680-520v-240H280v240q17 0 28.5 11.5T320-480q0 17-11.5 28.5T280-440v240Zm200-120q50 0 85-34.5t35-83.5q0-39-22.5-67T480-620q-75 86-97.5 114.5T360-438q0 49 35 83.5t85 34.5ZM280-200v-560 560Z"/>
     </svg>
@@ -83,15 +83,13 @@ const iconSet = {
   
 };
 
-const IconComponent = React.memo(({ id, latestValue, position, hoverText,onPositionChange, iconKey, topic = "", handleIconSelect, handleUnsubscribe, setDroppedIcons}) => {
-  debugger
+const IconComponent = React.memo(({ id, latestValue, svg, position,onPositionChange, iconKey, topic = "", handleIconSelect, handleUnsubscribe, setDroppedIcons, handleEdit}) => {
   const [iconColor, setIconColor] = useState('#5f6368'); 
   const [isEditing, setIsEditing] = useState(false);
   const [currentTopic, setCurrentTopic] = useState(topic);
   const previousTopic = useRef(topic);
   const [isBlinking, setIsBlinking] = useState(false);
   const isSubscribed = useRef(true);
-  
 
   useEffect(() => {
     if (latestValue !== undefined) {
@@ -113,9 +111,7 @@ const IconComponent = React.memo(({ id, latestValue, position, hoverText,onPosit
       mqttSub(currentTopic, (receivedTopic, message) => {
         const value = parseFloat(message);
         console.log(`Received message on topic ${receivedTopic}: ${value}`);
-        setDroppedIcons((prev) => 
-          prev.map((icon) => icon.topic === receivedTopic ? { ...icon, latestValue: value } : icon)
-        );
+        setDroppedIcons((prev) => prev.map((icon) => icon.topic === receivedTopic ? { ...icon, latestValue: value } : icon));
       });
   
       // Unsubscribe from the previous topic
@@ -157,6 +153,7 @@ const IconComponent = React.memo(({ id, latestValue, position, hoverText,onPosit
     }
     
     setIconColor(newColor);
+    setIsBlinking(true);
 };
 
 const handleTopicChangeInput = (e) => {  
@@ -178,9 +175,7 @@ const handleSubmit = () => {
           const value = parseFloat(message);
           if (!isNaN(value)) {
             updateIconColor(value);
-            setDroppedIcons((prev) => prev.map((icon) => 
-              icon.id === id ? {...icon, latestValue: value, topic: currentTopic} : icon
-            ));
+            setDroppedIcons((prev) => prev.map((icon) => icon.id === id ? {...icon, latestValue: value, topic: currentTopic} : icon));
           } else {
             console.error(`Invalid message value: ${message}`);
           }
@@ -215,20 +210,38 @@ const handleUnsubscribeClick = () => {
   setIsEditing(false);
 };
 
-
-const handleDrag = (event) => {
-  const newPosition = { x: event.clientX - 25, y: event.clientY - 25 };
-  onPositionChange(iconKey, newPosition);
+const handleDragStart = (e) => {
+  // Calculate the mouse offset from the icon's top-left corner
+  const rect = e.target.closest('div').getBoundingClientRect();
+  const offsetX = e.clientX - rect.left;
+  const offsetY = e.clientY - rect.top;
+  
+  // Store the icon's data and offset in the drag event
+  e.dataTransfer.setData('application/json', JSON.stringify({
+    id,
+    iconKey,
+    offsetX,
+    offsetY,
+    topic: currentTopic
+  }));
 };
 
-const handleDragStart = (event) => {
-  event.dataTransfer.setData('application/json', JSON.stringify({ iconKey, topic }));
-};
 
-const handleDragEnd = (event) => {
-  event.preventDefault();
-};
 const CurrentIcon = iconSet[iconKey] || iconSet.bulb;
+
+function updateLevel() {
+  const level = parseFloat(document.getElementById('waterLevel').value); // Get user input
+  const tankHeight = 280; // Height of the tank in SVG units
+  const waterRect = document.getElementById('water'); // Reference to the water rectangle
+
+  if (level >= 0 && level <= 100) { //height on basis of latestValue input
+      const newHeight = (level / 100) * tankHeight; 
+      waterRect.setAttribute('height', newHeight);
+      waterRect.setAttribute('y', 10 + (tankHeight - newHeight)); 
+  } else {
+      alert('Please enter a value between 0 and 100.'); 
+  }
+}
 
 
 return (
@@ -237,8 +250,10 @@ return (
     id={id} 
     draggable
     onDragStart={handleDragStart}
-    onDrag={handleDrag}
-    onDragEnd={handleDragEnd}
+    // onDrop={handleDrop}
+    // onDrag={handleDrag}
+    // onDragEnd={handleDragEnd}
+    // onDragOver={handleDragOver}
     onClick={handleIconSelect}
     onDoubleClick={() => setIsEditing(true)}
   >

@@ -102,6 +102,7 @@ function App() {
   };
 
   const handleTopicSubmit = (topic, colorThresholds) => {
+    debugger
     if (pendingIcon && topic.trim()) {
       const trimmedTopic = topic.trim();
 
@@ -128,6 +129,7 @@ function App() {
   };
 
   const handleEditSubmit = () => {
+    debugger
     if (editedTopic.trim() && editingIcon) {
         const oldTopic = editingIcon.topic;
         const newTopic = editedTopic.trim();
@@ -187,6 +189,7 @@ function App() {
   };
 
   const openEditDialog = (icon) => {
+    debugger
     setEditingIcon(icon);
     setEditedTopic(icon.topic); // Set the current topic in the edit dialog
     setEditDialogOpen(true);
@@ -255,15 +258,14 @@ function App() {
       >
         {droppedIcons.map((icon, index) => (
           <IconComponent 
-          key={icon.id} 
+          key={icon.id} //keep this compulsorily
           id={icon.id} 
           topic={icon.topic}  
-          hoverText={`Topic: ${icon.topic}`}
           latestValue={icon.latestValue} 
           position={icon.position} 
           iconKey={icon.iconKey} 
-          thresholds={icon.thresholds || [0, 15, 50, 75, 100]} // Default thresholds if not provided
-          colors={icon.colors || ['Red', 'Green', 'Blue', 'Yellow', 'Purple']} // Default colors if not provided
+          //thresholds={icon.thresholds || [0, 15, 50, 75, 100]} // Default thresholds if not provided
+         // colors={icon.colors || ['Red', 'Green', 'Blue', 'Yellow', 'Purple']} // Default colors if not provided
           handleUnsubscribe={handleUnsubscribe}
           onPositionChange={handlePositionChange} 
           setDroppedIcons={setDroppedIcons} 

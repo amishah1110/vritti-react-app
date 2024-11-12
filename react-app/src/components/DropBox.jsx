@@ -17,23 +17,31 @@ const DropBox = ({ onDropIcon }) => {
 
   const handleIconDrop = (draggedIcon, position) => {
     const existingIcon = icons.find((icon) => icon.id === draggedIcon.id);
-
+  
     if (existingIcon) {
       // Update existing icon position
-      setIcons((prevIcons) =>
-        prevIcons.map((icon) =>
-          icon.id === draggedIcon.id ? { ...icon, position } : icon
-        )
-      );
+      setIcons((prevIcons) => prevIcons.map((icon) => icon.id === draggedIcon.id ? { ...icon, position } : icon));
     } else {
       // Add new icon
-      const newIcon = { ...draggedIcon, position, topic: ''};
+      const newIcon = { ...draggedIcon, position, topic: '' };
       setIcons((prev) => prev.concat(newIcon));
       setCurrentIcon(newIcon);
       setCurrentPosition(position);
       setShowDialog(true); // Show dialog for new icon topic
     }
   };
+  
+
+  const handleDragStart = (icon) => {
+    const iconData = {
+      id: icon.id,
+      svg: icon.svg, // Ensure the icon's SVG representation is included
+      color: icon.color, // Include any other necessary properties
+      latestValue: icon.latestValue, // If applicable
+    };
+    event.dataTransfer.setData('application/json', JSON.stringify(iconData));
+  };
+  
 
   const handleDrop = (event) => {
     event.preventDefault();
@@ -44,7 +52,6 @@ const DropBox = ({ onDropIcon }) => {
     const rect = dropBox.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
-
     handleIconDrop(draggedData, { x, y });
   };
 
