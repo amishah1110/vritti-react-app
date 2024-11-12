@@ -91,7 +91,7 @@ function App() {
           thresholds: [0, 15, 50, 75, 100],
           topic: '', 
           color: '#5f6368',
-          colors : ['Red', 'Blue', 'Yellow', 'Green', 'Purple']
+          colors : ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange']
         };
 
         setDroppedIcons((prev) => [...prev, newIcon]);
@@ -102,7 +102,6 @@ function App() {
   };
 
   const handleTopicSubmit = (topic, colorThresholds) => {
-    debugger
     if (pendingIcon && topic.trim()) {
       const trimmedTopic = topic.trim();
 
@@ -200,12 +199,12 @@ function App() {
     
   }
 
-  const handleDrawButtonClick = () => {
-    navigate('/draw');
-  };
+  // const handleDrawButtonClick = () => {
+  //   navigate('/draw');
+  // };
 
-  const handleValueChange = (newValue) => {
-    updateIconColor(newValue);}
+  // const handleValueChange = (newValue) => {
+  //   updateIconColor(newValue);}
 
   return (
     <div className="App">

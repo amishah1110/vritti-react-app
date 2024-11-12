@@ -6,12 +6,11 @@ export let updatedThresholds = []; // Array to store user-defined thresholds
 export let updatedColors = []; // Array to store user-defined colors
 
 const TopicDialog = ({ open, onClose, onSubmit, initialTopic = '', inputRef }) => {
-  const defaultColors = ['red', 'green','blue','yellow','orange','purple'];
-
+  const defaultColors = ['Red', 'Green', 'Blue', 'Yellow', 'Orange', 'Purple'];
   const defaultThresholds = [10, 20, 30, 40, 50];
 
   const [topic, setTopic] = useState(initialTopic);
-  const [colorSelections, setColorSelections] = useState(Array(defaultThresholds.length - 1).fill(''));
+  const [colorSelections, setColorSelections] = useState(defaultColors.slice(0, defaultThresholds.length - 1));
   const [thresholds, setThresholds] = useState([...defaultThresholds]);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -19,8 +18,8 @@ const TopicDialog = ({ open, onClose, onSubmit, initialTopic = '', inputRef }) =
   useEffect(() => {
     if (open) {
       setTopic(initialTopic);
-      setColorSelections(Array(defaultThresholds.length - 1).fill(''));
-      setThresholds([...defaultThresholds]);
+      setColorSelections(defaultColors.slice(0, defaultThresholds.length - 1));
+      setThresholds([...defaultThresholds]);  
       setError('');
       setIsSubmitting(false);
       if (inputRef.current) {
@@ -63,7 +62,6 @@ const TopicDialog = ({ open, onClose, onSubmit, initialTopic = '', inputRef }) =
     if (!validateInput() || isSubmitting) return;
     setIsSubmitting(true);
 
-    // Copy user-defined thresholds and colors to the updated arrays
     updatedThresholds.length = 0; // Clear previous values
     updatedColors.length = 0; // Clear previous values
     updatedThresholds.push(...thresholds);
@@ -80,7 +78,7 @@ const TopicDialog = ({ open, onClose, onSubmit, initialTopic = '', inputRef }) =
 
   const handleClose = () => {
     setTopic(initialTopic);
-    setColorSelections(Array(defaultThresholds.length - 1).fill(''));
+    setColorSelections(defaultColors.slice(0, defaultThresholds.length - 1));
     setThresholds([...defaultThresholds]);
     setError('');
     onClose();
@@ -112,7 +110,7 @@ const TopicDialog = ({ open, onClose, onSubmit, initialTopic = '', inputRef }) =
                 value={threshold}
                 onChange={(e) => handleThresholdChange(index, e.target.value)}
                 min="0"
-                step="0.01"
+                step="0.1"
                 className="threshold-field"
               />
               {index < thresholds.length - 1 && (
