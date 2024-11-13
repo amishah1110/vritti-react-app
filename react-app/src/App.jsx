@@ -172,11 +172,20 @@ function App() {
     setEditedTopic('');
   };
 
-  const handlePositionChange = (id, newPosition) => {
-    setDroppedIcons((prevIcons) =>
-      prevIcons.map((icon) =>
-        icon.id === id ? { ...icon, position: newPosition } : icon
-      )
+  const handleIconPositionChange = (id, newPosition) => {
+    const dropBox = document.querySelector('.dropbox');
+    const rect = dropBox.getBoundingClientRect();
+    const iconWidth = 50;
+    const iconHeight = 50;
+
+    const maxX = rect.width - iconWidth;
+    const maxY = rect.height - iconHeight;
+
+    const x = Math.max(0, Math.min(newPosition.x, maxX));
+    const y = Math.max(0, Math.min(newPosition.y, maxY));
+
+    setDroppedIcons((prev) =>
+      prev.map((icon) =>icon.id === id ? { ...icon, position: { x, y } } : icon)
     );
   };
 
@@ -187,6 +196,7 @@ function App() {
   };
 
   const handleMouseMove = (e) => {  
+    debugger
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     const endX = e.nativeEvent.offsetX;
@@ -204,21 +214,7 @@ function App() {
       ctx.lineTo(endX, endY);
       ctx.stroke();
       currentDrawing.path.push({ x: endX, y: endY });
-    } else if (tool === 'rectangle' || tool === 'circle') {
-      redrawCanvas();
-      ctx.strokeStyle = colorChosen; // Use dynamic color
-      ctx.lineWidth = strokeWidth; // Use dynamic stroke width
-      if (tool === 'rectangle') {
-        const width = endX - startCoords.x;
-        const height = endY - startCoords.y;
-        ctx.strokeRect(startCoords.x, startCoords.y, width, height);
-      } else if (tool === 'circle') {
-        const radius = Math.sqrt((endX - startCoords.x) ** 2 + (endY - startCoords.y) ** 2);
-        ctx.beginPath();
-        ctx.arc(startCoords.x, startCoords.y, radius, 0, Math.PI * 2);
-        ctx.stroke();
-      }
-    }
+    } 
   };
 
   return (
@@ -234,7 +230,7 @@ function App() {
           onDragStart={(event) => handleDragStart(event, 'icon1')}
           style={{ display: 'inline-block', cursor: 'move' }}
         >
-    
+          
           <svg className="icon" id="icon1" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#5f6368"><path d="M480-80q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80ZM320-200v-80h320v80H320Zm10-120q-69-41-109.5-110T180-580q0-125 87.5-212.5T480-880q125 0 212.5 87.5T780-580q0 81-40.5 150T630-320H330Zm24-80h252q45-32 69.5-79T700-580q0-92-64-156t-156-64q-92 0-156 64t-64 156q0 54 24.5 101t69.5 79Zm126 0Z"/></svg>
         
           <svg className="icon" id="icon2"  xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#5f6368"><path d="M424-80q-51 0-77.5-30.5T320-180q0-26 11.5-50.5T367-271q22-14 35.5-36t18.5-47l-12-6q-6-3-11-7l-92 33q-17 6-33 10t-33 4q-63 0-111.5-55T80-536q0-51 30.5-77.5T179-640q26 0 51 11.5t41 35.5q14 22 36 35.5t47 18.5l6-12q3-6 7-11l-33-92q-6-17-10-33t-4-32q0-64 55-112.5T536-880q51 0 77.5 30.5T640-781q0 26-11.5 51T593-689q-22 14-35.5 36T539-606l12 6q6 3 11 7l92-34q17-6 32.5-9.5T719-640q81 0 121 67t40 149q0 51-32 77.5T777-320q-25 0-48.5-11.5T689-367q-14-22-36-35.5T606-421l-6 12q-3 6-7 11l33 92q6 16 10 30.5t4 30.5q1 65-54 115T424-80Zm56-340q25 0 42.5-17.5T540-480q0-25-17.5-42.5T480-540q-25 0-42.5 17.5T420-480q0 25 17.5 42.5T480-420Zm-46-192q6-2 12.5-3.5T459-618q8-42 30.5-78t59.5-60q5-4 8-10t3-15q0-8-6-13.5t-18-5.5q-38 0-86 16.5T400-719q0 9 2.5 17t4.5 15l27 75ZM240-400q14 0 33-7l75-27q-2-6-3.5-12.5T342-459q-42-8-78-30.5T204-549q-4-5-10.5-8t-14.5-3q-9 0-14 6t-5 18q0 54 20.5 95t59.5 41Zm184 240q47 0 92.5-19t43.5-66q0-8-2.5-15t-4.5-13l-27-75q-6 2-12.5 3.5T501-342q-8 42-30.5 78T411-204q-5 4-8.5 10.5T400-180q1 8 6 14t18 6Zm353-240q9 0 16-5t7-19q0-38-16-86.5T719-560q-9 0-17 2t-15 4l-75 28q2 6 3.5 12.5T618-501q42 8 78 30.5t60 59.5q3 5 9 8t12 3ZM618-501ZM459-618ZM342-459Zm159 117Z"/></svg>
@@ -262,12 +258,14 @@ function App() {
           <svg className="icon" id="icon13" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#5f6368" draggable="true" onDragStart={(e)=>handleDragStart(icon13)}><path d="M480-120q-42 0-71-29t-29-71q0-42 29-71t71-29q42 0 71 29t29 71q0 42-29 71t-71 29ZM254-346l-84-86q59-59 138.5-93.5T480-560q92 0 171.5 35T790-430l-84 84q-44-44-102-69t-124-25q-66 0-124 25t-102 69ZM84-516 0-600q92-94 215-147t265-53q142 0 265 53t215 147l-84 84q-77-77-178.5-120.5T480-680q-116 0-217.5 43.5T84-516Z"/></svg>
     </div>
     </div>
-
+    
+    {/* <canvas ref={canvasRef} width={200} height={200}></canvas>     */}
       <div
         id='drop-box' //for dropbox fxning
         style={{ width: 700, height: 300 }}
         className="dropbox"
         onDrop={handleDrop}
+        //onPositionChange={(event) => handleIconPositionChange(icon.id, { x: event.clientX - event.currentTarget.getBoundingClientRect().left, y: event.clientY - event.currentTarget.getBoundingClientRect().top })}
         onDragOver={(event) => event.preventDefault()}
       >
         {droppedIcons.map((icon) => (
@@ -279,7 +277,7 @@ function App() {
           position={icon.position} 
           iconKey={icon.iconKey} 
           handleUnsubscribe={handleUnsubscribe}
-          onPositionChange={handlePositionChange} 
+          onPositionChange={handleIconPositionChange} 
           setDroppedIcons={setDroppedIcons} 
           handleEdit={openEditDialog} 
           />

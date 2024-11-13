@@ -83,7 +83,7 @@ const iconSet = {
   
 };
 
-const IconComponent = React.memo(({ id, latestValue, svg, position,onPositionChange, iconKey, topic = "", handleIconSelect, handleUnsubscribe, setDroppedIcons, handleEdit}) => {
+const IconComponent = React.memo(({ id, latestValue, svg, position, onPositionChange, iconKey, topic = "", handleIconSelect, handleUnsubscribe, setDroppedIcons, handleEdit}) => {
   const [iconColor, setIconColor] = useState('#5f6368'); 
   const [isEditing, setIsEditing] = useState(false);
   const [currentTopic, setCurrentTopic] = useState(topic);
