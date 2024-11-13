@@ -16,6 +16,7 @@ const DrawingCanvas = () => {
   const [colorChosen, setColorChosen] = useState("black");
   const [strokeWidth, setStrokeWidth] = useState(3); // Add stroke width state
 
+
   const navigate = useNavigate();
 
   useEffect(() => {

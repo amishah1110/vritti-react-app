@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import IconComponent from './components/icon-component';
 import { useNavigate } from 'react-router-dom';
-import DrawingCanvas from './DrawingCanvas';
 import TopicDialog from './components/TopicDialog';
 import { mqttSub, mqttUnsub, initializeClient } from './Subscribe';
 
@@ -16,9 +15,11 @@ function App() {
   const [droppedIcons, setDroppedIcons] = useState([]);
   const [pendingIcon, setPendingIcon] = useState(null);
   const inputRef = useRef(null);
-
   const navigate = useNavigate();
-
+  const canvasRef = useRef(null);
+  const[isDrawing, setIsDrawing] = useState(false);
+  const[drawings, setDrawings] = useState([]);
+  
   useEffect(() => {
     initializeClient();
   }, []);
@@ -29,12 +30,9 @@ function App() {
     }
   }, [dialogOpen]);
 
-  const handleTopicChange = (event) => {
-    setNewTopic(event.target.value);
-  };
+  const handleTopicChange = (event) => setNewTopic(event.target.value);
 
   const handleSubscribe = () => {
-    
     if (newTopic && !subscribedTopics.includes(newTopic)) {
       mqttSub(newTopic, (receivedTopic, message) => {
         const value = parseFloat(message);
@@ -51,14 +49,14 @@ function App() {
   };
 
   const handleUnsubscribe = (id) => {
-    const iconToUnsubscribe = droppedIcons.find((icon) => icon.id == id);
+    const iconToUnsubscribe = droppedIcons.find((icon) => icon.id === id);
     if (iconToUnsubscribe) {
       mqttUnsub(iconToUnsubscribe.topic);
       setDroppedIcons((prevIcons) =>
-        prevIcons.filter((icon) => icon.id != id)
+        prevIcons.filter((icon) => icon.id !== id)
       );
       setSubscribedTopics((prevTopics) =>
-        prevTopics.filter((topic) => topic != iconToUnsubscribe.topic)
+        prevTopics.filter((topic) => topic !== iconToUnsubscribe.topic)
       );
     }
   };
@@ -71,18 +69,18 @@ function App() {
   const handleDrop = (event) => {
     event.preventDefault();
     const data = event.dataTransfer.getData('application/json');
-
     if (data && event.target.id === 'drop-box') {
       const { iconKey, topic, id } = JSON.parse(data);
       const rect = event.currentTarget.getBoundingClientRect();
       const x = event.clientX - rect.left;
       const y = event.clientY - rect.top;
 
-      const existingIcon = droppedIcons.find(icon => icon.id == id);
-
+      const existingIcon = droppedIcons.find(icon => icon.id === id);
       if (existingIcon) {
         setDroppedIcons((prevIcons) =>
-          prevIcons.map((icon) =>icon.id == id ? { ...icon, position: { x, y } } : icon));
+          prevIcons.map((icon) => 
+            icon.id === id ? { ...icon, position: { x, y } } : icon)
+        );
       } else {
         const newIcon = {
           id: Date.now(), 
@@ -91,9 +89,8 @@ function App() {
           thresholds: [0, 15, 50, 75, 100],
           topic: '', 
           color: '#5f6368',
-          colors : ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange']
+          colors: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange']
         };
-
         setDroppedIcons((prev) => [...prev, newIcon]);
         setPendingIcon(newIcon);
         setDialogOpen(true);
@@ -104,11 +101,11 @@ function App() {
   const handleTopicSubmit = (topic, colorThresholds) => {
     if (pendingIcon && topic.trim()) {
       const trimmedTopic = topic.trim();
-
-      if (!droppedIcons.some(icon => icon.topic == trimmedTopic)) {
-        const updatedIcon = {...pendingIcon, topic: trimmedTopic, thresholds:colorThresholds};
-
-        setDroppedIcons((prev) => prev.map(icon => (icon.id == updatedIcon.id ? updatedIcon : icon)));
+      if (!droppedIcons.some(icon => icon.topic === trimmedTopic)) {
+        const updatedIcon = {...pendingIcon, topic: trimmedTopic, thresholds: colorThresholds};
+        setDroppedIcons((prev) =>
+          prev.map((icon) => (icon.id === updatedIcon.id ? updatedIcon : icon))
+        );
 
         mqttSub(trimmedTopic, (receivedTopic, message) => {
           const value = parseFloat(message);
@@ -128,55 +125,51 @@ function App() {
   };
 
   const handleEditSubmit = () => {
-    debugger
     if (editedTopic.trim() && editingIcon) {
-        const oldTopic = editingIcon.topic;
-        const newTopic = editedTopic.trim();
+      const oldTopic = editingIcon.topic;
+      const newTopic = editedTopic.trim();
 
-        console.log(`Editing topic from "${oldTopic}" to "${newTopic}"`);
-        if (oldTopic !== newTopic) {
-            mqttUnsub(oldTopic);
-            console.log(`Unsubscribed from old topic: ${oldTopic}`);
+      console.log(`Editing topic from "${oldTopic}" to "${newTopic}"`);
+      if (oldTopic !== newTopic) {
+        mqttUnsub(oldTopic);
+        console.log(`Unsubscribed from old topic: ${oldTopic}`);
+        if (!subscribedTopics.includes(newTopic) && !droppedIcons.some(icon => icon.topic === newTopic)) {
+          setDroppedIcons((prev) =>
+            prev.map((icon) => icon.id === editingIcon.id ? { ...icon, topic: newTopic } : icon)
+          );
+          setSubscribedTopics((prevTopics) => {
+            const updatedTopics = prevTopics.filter((topic) => topic !== oldTopic);
+            return [...updatedTopics, newTopic];
+          });
 
-            if (!subscribedTopics.includes(newTopic) && !droppedIcons.some(icon => icon.topic == newTopic)) {
-                setDroppedIcons((prev) =>
-                    prev.map((icon) => icon.id == editingIcon.id ? { ...icon, topic: newTopic } : icon)
-                );
-                setSubscribedTopics((prevTopics) => {
-                    const updatedTopics = prevTopics.filter((topic) => topic != oldTopic);
-                    console.log(`Updated subscribed topics: ${[...updatedTopics, newTopic]}`);
-                    return [...updatedTopics, newTopic];
-                });
+          mqttSub(newTopic, (receivedTopic, message) => {
+            const value = parseFloat(message);
+            setDroppedIcons((prev) =>
+              prev.map((icon) =>
+                icon.topic === receivedTopic ? { ...icon, latestValue: value } : icon
+              )
+            );
+          });
 
-                mqttSub(newTopic, (receivedTopic, message) => {
-                    const value = parseFloat(message);
-                    console.log(`Received message on topic ${receivedTopic}: ${value}`);
-                    setDroppedIcons((prev) =>
-                        prev.map((icon) => icon.topic == receivedTopic ? { ...icon, latestValue: value } : icon));
-                });
-
-                setEditDialogOpen(false);
-                setEditingIcon(null);
-                setEditedTopic(''); 
-            } else {
-                alert("This topic is already subscribed. Please enter a unique topic.");
-            }
+          setEditDialogOpen(false);
+          setEditingIcon(null);
+          setEditedTopic('');
         } else {
-            console.log("No changes made to the topic.");
-            setEditDialogOpen(false);
-            setEditingIcon(null);
-            setEditedTopic('');
+          alert("This topic is already subscribed. Please enter a unique topic.");
         }
-    } else {
-        console.log("Invalid topic or editingIcon is null");
+      } else {
+        console.log("No changes made to the topic.");
+        setEditDialogOpen(false);
+        setEditingIcon(null);
+        setEditedTopic('');
+      }
     }
-};
-
+  };
 
   const handleEditCancel = () => {
     setEditDialogOpen(false);
     setEditingIcon(null);
-    setEditedTopic(''); // Reset the edited topic
+    setEditedTopic('');
   };
 
   const handlePositionChange = (id, newPosition) => {
@@ -188,31 +181,54 @@ function App() {
   };
 
   const openEditDialog = (icon) => {
-    debugger
     setEditingIcon(icon);
-    setEditedTopic(icon.topic); // Set the current topic in the edit dialog
+    setEditedTopic(icon.topic); 
     setEditDialogOpen(true);
   };
 
-  const updateThresholds = (updatedValues, iconIndex) => {
-    const icon = icons[iconIndex];
-    
-  }
+  const handleMouseMove = (e) => {
+    debugger  
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const endX = e.nativeEvent.offsetX;
+    const endY = e.nativeEvent.offsetY;
 
-  // const handleDrawButtonClick = () => {
-  //   navigate('/draw');
-  // };
-
-  // const handleValueChange = (newValue) => {
-  //   updateIconColor(newValue);}
+    if (tool === 'eraser') {
+      erase(endX, endY);
+    } else if (tool === 'pencil') {
+      const currentDrawing = drawings[drawings.length - 1];
+      ctx.strokeStyle = colorChosen; // Use dynamic color
+      ctx.lineWidth = strokeWidth; // Use dynamic stroke width
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(currentDrawing.path[currentDrawing.path.length - 1].x, currentDrawing.path[currentDrawing.path.length - 1].y);
+      ctx.lineTo(endX, endY);
+      ctx.stroke();
+      currentDrawing.path.push({ x: endX, y: endY });
+    } else if (tool === 'rectangle' || tool === 'circle') {
+      redrawCanvas();
+      ctx.strokeStyle = colorChosen; // Use dynamic color
+      ctx.lineWidth = strokeWidth; // Use dynamic stroke width
+      if (tool === 'rectangle') {
+        const width = endX - startCoords.x;
+        const height = endY - startCoords.y;
+        ctx.strokeRect(startCoords.x, startCoords.y, width, height);
+      } else if (tool === 'circle') {
+        const radius = Math.sqrt((endX - startCoords.x) ** 2 + (endY - startCoords.y) ** 2);
+        ctx.beginPath();
+        ctx.arc(startCoords.x, startCoords.y, radius, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+  };
 
   return (
     <div className="App">
       <div className="subscription-container">
         <h2>MQTT Subscription</h2>
-        <button className="drawButton" onClick={()=> navigate('/draw')}> Draw </button>
+        <button className="drawButton" onClick={() => navigate('/draw')}> Draw </button>
+        <button className="connectButton" onClick={handleMouseMove}> Connect </button>
       </div>
-
       <div className="icon-container">
         <div
           draggable
@@ -274,7 +290,6 @@ function App() {
       </div>
 
       <TopicDialog open={dialogOpen} onClose={() => setDialogOpen(false)} onSubmit={handleTopicSubmit} initialTopic={newTopic} inputRef={inputRef}/>
-        
       <TopicDialog open={editDialogOpen} onClose={handleEditCancel} onSubmit={handleEditSubmit} initialTopic={editedTopic} inputRef={inputRef}/>
     </div>
     

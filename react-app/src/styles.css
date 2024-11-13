@@ -266,6 +266,14 @@ button.unsubscribeButton:hover {
 .drawButton:hover{
     background-color: #5b07a9;
 }
+.connectButton{
+    background-color:blue;
+    justify-content: left;
+}
+
+.connectButton:hover{
+    background-color: #26039b;
+}
 
 #CanvasPencilButton{
     background-color: #1E2761;

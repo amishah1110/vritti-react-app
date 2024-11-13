@@ -90,8 +90,8 @@ const IconComponent = React.memo(({ id, latestValue, svg, position,onPositionCha
   const previousTopic = useRef(topic);
   const [isBlinking, setIsBlinking] = useState(false);
   const Icon = iconSet[iconKey] || iconSet.bulb;
-
   const isSubscribed = useRef(true);
+
 
   useEffect(() => {
     if (latestValue !== undefined) {
@@ -116,10 +116,8 @@ const IconComponent = React.memo(({ id, latestValue, svg, position,onPositionCha
         console.log(`Received message on topic ${receivedTopic}: ${value}`);
         setDroppedIcons((prev) => prev.map((icon) => icon.topic === receivedTopic ? { ...icon, latestValue: value } : icon));
       });
-  
       // Unsubscribe from the previous topic
       if (previousTopic.current) {
-        debugger
         mqttUnsub(previousTopic.current);
       }
   
@@ -128,7 +126,6 @@ const IconComponent = React.memo(({ id, latestValue, svg, position,onPositionCha
     }
   }, [currentTopic]);
 
-  debugger
   const updateIconColor = (latestValue) => {
     let newColor = '#5f6368'; // Default color
 
@@ -241,7 +238,6 @@ const handleDrop = (e) => {
   }
   e.preventDefault();
 };
-
 
 
 function updateLevel(latestValue) {
