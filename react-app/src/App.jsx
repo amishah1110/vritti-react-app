@@ -186,8 +186,7 @@ function App() {
     setEditDialogOpen(true);
   };
 
-  const handleMouseMove = (e) => {
-    debugger  
+  const handleMouseMove = (e) => {  
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     const endX = e.nativeEvent.offsetX;
@@ -271,16 +270,14 @@ function App() {
         onDrop={handleDrop}
         onDragOver={(event) => event.preventDefault()}
       >
-        {droppedIcons.map((icon, index) => (
+        {droppedIcons.map((icon) => (
           <IconComponent 
-          key={icon.id} //keep this compulsorily
+          key={icon.id} //keep this compulsory
           id={icon.id} 
           topic={icon.topic}  
           latestValue={icon.latestValue} 
           position={icon.position} 
           iconKey={icon.iconKey} 
-          //thresholds={icon.thresholds || [0, 15, 50, 75, 100]} // Default thresholds if not provided
-         // colors={icon.colors || ['Red', 'Green', 'Blue', 'Yellow', 'Purple']} // Default colors if not provided
           handleUnsubscribe={handleUnsubscribe}
           onPositionChange={handlePositionChange} 
           setDroppedIcons={setDroppedIcons} 
