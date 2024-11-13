@@ -59,7 +59,7 @@ function App() {
         prevTopics.filter((topic) => topic !== iconToUnsubscribe.topic)
       );
     }
-  };
+  }
 
   const handleDragStart = (event, iconKey) => {
     event.dataTransfer.setData('application/json', JSON.stringify({ iconKey }));

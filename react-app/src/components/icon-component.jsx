@@ -127,6 +127,7 @@ const IconComponent = React.memo(({ id, latestValue, svg, position, onPositionCh
   }, [currentTopic]);
 
   const updateIconColor = (latestValue) => {
+    debugger
     let newColor = '#5f6368'; // Default color
 
     if (!updatedThresholds || !updatedColors || updatedThresholds.length === 0 || updatedColors.length === 0) {
@@ -162,6 +163,7 @@ const handleTopicChangeInput = (e) => {
 };
 
 const handleSubmit = () => {
+  debugger
   if (currentTopic.trim()) {
     if (currentTopic !== previousTopic.current) {
       // Only unsubscribe if the topic has changed
@@ -196,16 +198,15 @@ const handleSubmit = () => {
   }
 };
 
-
 const handleCancel = () => {
   setCurrentTopic(previousTopic.current);
   setIsEditing(false);
 };
 
-const handleUnsubscribeClick = async() => { //to prevent async execution of this function
+const handleUnsubscribeClick = () => { //to prevent async execution of this function
   console.log(`Unsubscribing from topic: ${previousTopic.current}`);
-  await mqttUnsub(previousTopic.current);
-  await handleUnsubscribe(id);
+  mqttUnsub(previousTopic.current);
+  handleUnsubscribe(id);
   setCurrentTopic('');
   previousTopic.current = '';
   isSubscribed.current = false;
@@ -225,7 +226,6 @@ const handleDragStart = (e) => {
 
 // const handleDrop = (e) => {
 //   e.preventDefault();
-  
 // };
 
 const handleDrop = (e) => {
@@ -254,7 +254,6 @@ function updateLevel(latestValue) {
       alert('Please enter a value between 0 and 100.'); 
   }
 }
-
 
 return (
   <div 
