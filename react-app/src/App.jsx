@@ -132,7 +132,7 @@ function App() {
       console.log(`Editing topic from "${oldTopic}" to "${newTopic}"`);
       if (oldTopic !== newTopic) {
         mqttUnsub(oldTopic);
-        console.log(`Unsubscribed from old topic: ${oldTopic}`);
+         console.log(`Unsubscribed from old topic: ${oldTopic}`);
         if (!subscribedTopics.includes(newTopic) && !droppedIcons.some(icon => icon.topic === newTopic)) {
           setDroppedIcons((prev) =>
             prev.map((icon) => icon.id === editingIcon.id ? { ...icon, topic: newTopic } : icon)
