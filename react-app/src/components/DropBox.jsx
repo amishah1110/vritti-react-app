@@ -45,7 +45,8 @@ const DropBox = ({ onDropIcon }) => {
 
   const handleDrop = (event) => {
     event.preventDefault();
-    const data = event.dataTransfer.getData('application/json');
+    const data = event.dataTransfer.setData('application/json', JSON.stringify({ id, iconKey, offsetX, offsetY, topic: currentTopic}));
+    //const data = event.dataTransfer.getData('application/json');
     const draggedData = JSON.parse(data);
 
     const dropBox = event.currentTarget;

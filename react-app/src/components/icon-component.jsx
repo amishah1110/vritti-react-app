@@ -95,6 +95,7 @@ const IconComponent = React.memo(({ id, latestValue, svg, position, onPositionCh
 
   useEffect(() => {
     if (latestValue !== undefined) {
+      debugger
         const numericValue = typeof latestValue === 'number' ? latestValue : parseFloat(latestValue);
         if (!isNaN(numericValue)) {
             updateIconColor(numericValue);
