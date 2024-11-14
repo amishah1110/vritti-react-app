@@ -72,7 +72,6 @@ const DropBox = ({ onDropIcon }) => {
       mqttSub(newTopic, (receivedTopic, message) => {
         console.log(`Received message on topic ${receivedTopic}: ${message}`);
       });
-
       setShowDialog(false);
     } else {
       handleUnsubscribe(currentIcon.id);
