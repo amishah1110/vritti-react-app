@@ -92,14 +92,13 @@ const IconComponent = React.memo(({ id, latestValue, svg, position, onPositionCh
   const Icon = iconSet[iconKey] || iconSet.bulb;
   const isSubscribed = useRef(true);
 
-
   useEffect(() => {
     if (latestValue !== undefined) {
-      debugger
         const numericValue = typeof latestValue === 'number' ? latestValue : parseFloat(latestValue);
         if (!isNaN(numericValue)) {
-            updateIconColor(numericValue);
             updateLevel(numericValue);
+            updateIconColor(numericValue);
+           
         } else {
             console.error('Received value is not a number:', latestValue);
         }
@@ -133,7 +132,7 @@ const IconComponent = React.memo(({ id, latestValue, svg, position, onPositionCh
 
     if (!updatedThresholds || !updatedColors || updatedThresholds.length === 0 || updatedColors.length === 0) {
         console.error('Thresholds or colors are undefined or empty');
-        return;
+        return; 
     }
 
     // Check if latestValue is a number
@@ -154,7 +153,6 @@ const IconComponent = React.memo(({ id, latestValue, svg, position, onPositionCh
     } else {
         newColor = '#000000'; // Assign a default color for out-of-range values
     }
-    
     setIconColor(newColor);
     setIsBlinking(true);
 };
@@ -164,12 +162,10 @@ const handleTopicChangeInput = (e) => {
 };
 
 const handleSubmit = () => {
-  debugger
   if (currentTopic.trim()) {
     if (currentTopic !== previousTopic.current) {
       // Only unsubscribe if the topic has changed
       if (previousTopic.current) {
-        debugger
         mqttUnsub(previousTopic.current);
       }
       
@@ -202,6 +198,7 @@ const handleSubmit = () => {
 const handleCancel = () => {
   setCurrentTopic(previousTopic.current);
   setIsEditing(false);
+  
 };
 
 const handleUnsubscribeClick = () => { //to prevent async execution of this function

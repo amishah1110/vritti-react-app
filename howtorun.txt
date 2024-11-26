@@ -1,0 +1,8 @@
+how to run this project?
+
+- open terminal
+- go to this project directory
+- type "cd react-app"
+- type "npm run dev"
+- go to docker desktop and start running the "csm" image.
+- dont change anything in mosquitto.conf

@@ -1,127 +1,73 @@
-import React, { useState, useEffect } from 'react';
-import IconComponent from './IconComponent';
-import TopicDialog from './TopicDialog';
-import { mqttSub, mqttUnsub } from './Subscribe';
-import '../styles.css';
+import React, { useState, useRef, useEffect } from 'react';
 
-const DropBox = ({ onDropIcon }) => {
-  const [icons, setIcons] = useState([]);
-  const [showDialog, setShowDialog] = useState(false);
-  const [currentIcon, setCurrentIcon] = useState(null);
-  const [currentPosition, setCurrentPosition] = useState(null);
+const DropBox = () => {
+  const [lineData, setLineData] = useState(null);
+  const canvasRef = useRef(null);
 
+  // This effect ensures the canvas and context are ready before drawing
   useEffect(() => {
-    // Remove icons with null topics
-    setIcons((prevIcons) => prevIcons.filter((icon) => icon.topic !== null));
-  }, []);
-
-  const handleIconDrop = (draggedIcon, position) => {
-    const existingIcon = icons.find((icon) => icon.id === draggedIcon.id);
-  
-    if (existingIcon) {
-      // Update existing icon position
-      setIcons((prevIcons) => prevIcons.map((icon) => icon.id === draggedIcon.id ? { ...icon, position } : icon));
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        // Canvas setup code here (e.g., stroke styles)
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'black';
+      } else {
+        console.error("Failed to get canvas context!");
+      }
     } else {
-      // Add new icon
-      const newIcon = { ...draggedIcon, position, topic: '' };
-      setIcons((prev) => prev.concat(newIcon));
-      setCurrentIcon(newIcon);
-      setCurrentPosition(position);
-      setShowDialog(true); // Show dialog for new icon topic
+      console.error("Canvas is not available!");
     }
-  };
-  
+  }, []); // Empty array means it runs only once after initial render
 
-  const handleDragStart = (icon) => {
-    const iconData = {
-      id: icon.id,
-      svg: icon.svg, // Ensure the icon's SVG representation is included
-      color: icon.color, // Include any other necessary properties
-      latestValue: icon.latestValue, // If applicable
-    };
-    event.dataTransfer.setData('application/json', JSON.stringify(iconData));
-  };
-  
+  // Draw the line when lineData is updated
+  const drawLine = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) {
+      console.error("Canvas is not available!");
+      return; // Ensure canvas is available
+    }
 
-  const handleDrop = (event) => {
-    event.preventDefault();
-    const data = event.dataTransfer.setData('application/json', JSON.stringify({ id, iconKey, offsetX, offsetY, topic: currentTopic}));
-    //const data = event.dataTransfer.getData('application/json');
-    const draggedData = JSON.parse(data);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      console.error("Failed to get canvas context!");
+      return; // Ensure context is available
+    }
 
-    const dropBox = event.currentTarget;
-    const rect = dropBox.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-    handleIconDrop(draggedData, { x, y });
-  };
-
-  const handleDialogSubmit = (newTopic, colorThresholds) => {
-    if (currentIcon && newTopic.trim()) {
-      // Unsubscribe from the old topic
-      mqttUnsub(currentIcon.topic);
-
-      // Update the icon with the new topic
-      setIcons((prevIcons) =>
-        prevIcons.map((icon) =>
-          icon.id === currentIcon.id ? { ...icon, topic: newTopic } : icon
-        )
-      );
-
-      // Subscribe to the new topic
-      mqttSub(newTopic, (receivedTopic, message) => {
-        console.log(`Received message on topic ${receivedTopic}: ${message}`);
-      });
-      setShowDialog(false);
-    } else {
-      handleUnsubscribe(currentIcon.id);
+    if (lineData) {
+      const { start, end } = lineData;
+      ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear previous drawings
+      ctx.beginPath();
+      ctx.moveTo(start.x, start.y);
+      ctx.lineTo(end.x, end.y);
+      ctx.stroke();
     }
   };
 
-  const handleUnsubscribe = (id) => {
-    const iconToUnsubscribe = icons.find((icon) => icon.id === id);
-    if (iconToUnsubscribe) {
-      mqttUnsub(iconToUnsubscribe.topic);
-      setIcons((prevIcons) => prevIcons.filter((icon) => icon.id !== id));
-    }
+  // This is an example of how you can set lineData (for connecting icons)
+  const connectIcons = (startPosition, endPosition) => {
+    setLineData({ start: startPosition, end: endPosition });
   };
+
+  // Trigger drawing whenever lineData changes
+  useEffect(() => {
+    drawLine();
+  }, [lineData]);
 
   return (
-    <div>
-      <div
-        className="dropbox"
-        onDragOver={(e) => e.preventDefault()}
-        onDrop={handleDrop}
-        style={{
-          position: 'absolute',
-          left: 0,
-          top: 0,
-          width: '300px',
-          height: '500px',
-          border: '1px solid #ccc',
-          marginRight: '20px',
-        }}
-      >
-        {icons.map((icon) => (
-          <IconComponent
-            key={icon.id}
-            topic={icon.topic}
-            position={icon.position}
-            iconKey={icon.id}
-            handleUnsubscribe={handleUnsubscribe}
-            onPositionChange={handleIconDrop}
-          />
-        ))}
-      </div>
+    <div style={{ position: 'relative' }}>
+      {/* Canvas to draw lines */}
+      <canvas
+        ref={canvasRef}
+        width={300}
+        height={500}
+        style={{ border: '1px solid black' }}
+      ></canvas>
 
-      {showDialog && (
-        <TopicDialog
-          open={showDialog}
-          onClose={() => setShowDialog(false)}
-          onSubmit={handleDialogSubmit}
-          dialogStyle={{ right: 0 }}
-        />
-      )}
+      <button onClick={() => connectIcons({ x: 50, y: 50 }, { x: 250, y: 250 })}>
+        Draw Line
+      </button>
     </div>
   );
 };
